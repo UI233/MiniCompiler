@@ -24,8 +24,6 @@ class Ast {
 public:
 	AST_NODE_TYPE nodeType;
 
-	//check semantic for ast
-	virtual bool check() = 0;
 	//get the value of ast, if has not, return ERROR_NO_VAL
 	virtual valueUnion getValue() = 0;
 	//this function is used to convert AST to IR, and add it to 'ir'.
@@ -41,7 +39,6 @@ class ExprAst:public Ast
 public:
 	SPL_TYPE valueType;
 
-	virtual bool check() = 0;
 	//get Ast's value (if has)
 	virtual valueUnion getValue() = 0;
 	virtual void toIR(SPL_IR* ir) = 0;
@@ -57,7 +54,6 @@ protected:
 	ExprAst* rchild;
 public:
 	MathAst(SPL_OP op, ExprAst* left = nullptr, ExprAst* right = nullptr);
-	bool check();
 	valueUnion getValue();
 	void toIR(SPL_IR* ir);
 	void __show(std::fstream& fout);
@@ -74,7 +70,6 @@ public:
 	ConstAst(bool x);
 	ConstAst(const std::string& x);
 	valueUnion getValue();
-	bool check();
 	void __show(std::fstream& fout);
 	void toIR(SPL_IR* ir);
 	~ConstAst();
@@ -91,7 +86,6 @@ public:
 	SymbolAst(std::string& id_, unsigned int scopeIndex_, Symbol* s);
 	~SymbolAst();
 	valueUnion getValue();
-	bool check();
 	void __show(std::fstream& fout);
 	void toIR(SPL_IR* ir);
 	Symbol* get_symbol() {
@@ -110,7 +104,6 @@ public:
 	ExprAst* exp;
 
 	ArrayAst(SymbolAst* sym_, ExprAst* exp_);
-	bool check();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	void toIR(SPL_IR* ir);
@@ -129,7 +122,6 @@ protected:
 
 public:
 	DotAst(SymbolAst* record_, SymbolAst* field_);
-	bool check();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	void toIR(SPL_IR* ir);
@@ -146,7 +138,6 @@ public:
 	~AssignAst() ;
 	valueUnion getValue() ;
 	void __show(std::fstream& fout) ;
-	bool check();
 	void toIR(SPL_IR* ir) ;
 	
 };
@@ -156,7 +147,6 @@ public:
 class StmtAst :public Ast
 // StmtAst is Ast those has not value.
 {
-	virtual bool check() = 0;
 	//this function is used to convert AST to IR, and add it to 'ir'.
 	virtual void toIR(SPL_IR* ir) = 0;
 	//the function is for debug
@@ -175,7 +165,6 @@ public:
 	void __show(std::fstream& fout);
 	void addRight(StmtAst* doElse_);
 	StmtAst* getDoElse(void);
-	bool check();
 	void toIR(SPL_IR* ir);
 	~IfAst();
 };
@@ -194,7 +183,6 @@ public:
 	CaseAst(ExprAst* cond, std::vector<CaseUnit>* caseStmt);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	bool check();
 	void toIR(SPL_IR* ir);
 	~CaseAst();
 };
@@ -210,7 +198,6 @@ public:
 	~WhileAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	bool check() ;
 	void toIR(SPL_IR* ir);
 
 };
@@ -225,7 +212,6 @@ public:
 	~RepeatAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	bool check();
 	void toIR(SPL_IR* ir);
 
 
@@ -244,7 +230,6 @@ public:
 	~ForAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	bool check();
 	void toIR(SPL_IR* ir);
 
 };
@@ -259,7 +244,6 @@ public:
 	int getlabel();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	bool check();
 	void toIR(SPL_IR* ir);
 };
 
@@ -272,7 +256,6 @@ public:
 	~CompoundAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	bool check();
 	void toIR(SPL_IR* ir);
 };
 
@@ -289,7 +272,6 @@ public:
 	~FuncAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	bool check();
 	void toIR(SPL_IR* ir);
 	Symbol* get_symbol() {
 		//if (!symbol) throw invalid_argument{ "access void pointer in function: " + funcId };
