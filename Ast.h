@@ -95,7 +95,7 @@ protected:
 	//void print(void);
 	std::string arrayName;
 	SymbolAst* sym;
-	ExprAst* exp;
+	ExprAst* exp_index;
 public:
 	ArrayAst(SymbolAst* sym_, ExprAst* exp_);
 	valueUnion getValue();
