@@ -51,4 +51,8 @@ enum AST_NODE_TYPE {
 	AST_SYSFUNC
 };
 
+enum SYS_FUNC_ID {
+	SQRT = 1
+};
+
 #endif
