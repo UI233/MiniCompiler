@@ -1,10 +1,10 @@
-#ifndef _AST_H
-#define _AST_H
+#pragma once
 
 #include <string>
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <llvm/IR/Value.h>
 #include "SPL_common.h"
 
 namespace SPL {
@@ -19,30 +19,28 @@ union valueUnion {
 	~valueUnion() {}
 };
 
-using SPL_IR = void;
 class Ast {
 
 public:
 	AST_NODE_TYPE nodeType;
+	using SPL_IR = llvm::Value*;
 
 	//get the value of ast, if has not, return ERROR_NO_VAL
 	virtual valueUnion getValue() = 0;
 	//the function is for debug
 	virtual void __show(std::fstream& fout) = 0;
-	virtual SPL_IR toIR();
+	virtual SPL_IR codeGen() = 0;
 	virtual ~Ast() = 0;
 };
 
-class ExprAst:public Ast 
+class ExprAst: public Ast 
 // ExprAst is Ast those has value, such as 2+3(MathAst),a[i](ArrayAst),a = 2+3, ...
 {
 public:
 	SPL_TYPE valueType;
-
 	//get Ast's value (if has)
 	virtual valueUnion getValue() = 0;
 	virtual void __show(std::fstream& fout) = 0;
-	virtual SPL_IR toIR();
 	virtual ~ExprAst() = 0;
 };
 
@@ -53,11 +51,10 @@ protected:
 	ExprAst* lchild;
 	ExprAst* rchild;
 public:
-	
 	MathAst(SPL_OP op, ExprAst* left = nullptr, ExprAst* right = nullptr);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 	~MathAst();
 };
 
@@ -72,22 +69,19 @@ public:
 	ConstAst(const std::string& x);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 	~ConstAst();
 };
 
 class SymbolAst final: public ExprAst {
 protected:
-
 	std::string name;
 public:
-
 	SymbolAst(const std::string& name);
 	~SymbolAst();
-	SPL_IR toIR();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	
+	virtual Ast::SPL_IR codeGen();
 };
 
 class ArrayAst final: public ExprAst {
@@ -99,37 +93,33 @@ protected:
 public:
 	ArrayAst(SymbolAst* sym_, ExprAst* exp_);
 	valueUnion getValue();
-	SPL_IR toIR();
 	void __show(std::fstream& fout);
 	~ArrayAst();
-	
+	virtual Ast::SPL_IR codeGen();
 };
 
 class DotAst final:public ExprAst {
 protected:
 	SymbolAst* record;
 	SymbolAst* field;
-
 public:
 	DotAst(SymbolAst* record_, SymbolAst* field_);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
 	~DotAst();
+	virtual Ast::SPL_IR codeGen();
 };
 
 class AssignAst final:public ExprAst {
 protected:
 	ExprAst* lhs;
 	ExprAst* rhs;
-
 public:
 	AssignAst(ExprAst* lhs_, ExprAst* rhs_);
 	~AssignAst() ;
 	valueUnion getValue() ;
-	SPL_IR toIR();
 	void __show(std::fstream& fout) ;
-	
+	virtual Ast::SPL_IR codeGen();
 };
 
 
@@ -137,8 +127,6 @@ public:
 class StmtAst:public Ast
 // StmtAst is Ast those has not value.
 {
-	//this function is used to convert AST to IR, and add it to 'ir'.
-	virtual SPL_IR toIR();
 	//the function is for debug
 	virtual void __show(std::fstream& fout) = 0;
 	virtual ~StmtAst() = 0;
@@ -155,7 +143,7 @@ public:
 	void __show(std::fstream& fout);
 	void addRight(StmtAst* doElse_);
 	StmtAst* getDoElse(void);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 	~IfAst();
 };
 
@@ -173,7 +161,7 @@ public:
 	CaseAst(ExprAst* cond, std::vector<CaseUnit>* caseStmt);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 	~CaseAst();
 };
 
@@ -182,14 +170,12 @@ class WhileAst final: public StmtAst
 protected:
 	ExprAst* cond;
 	StmtAst* stmt;
-
 public:
 	WhileAst(ExprAst* cond_, StmtAst* stmt_);
 	~WhileAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout); 
-	SPL_IR toIR();
-
+	virtual Ast::SPL_IR codeGen();
 };
 
 class RepeatAst final: public StmtAst
@@ -202,9 +188,7 @@ public:
 	~RepeatAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	SPL_IR toIR();
-
-
+	virtual Ast::SPL_IR codeGen();
 };
 
 class ForAst final: public StmtAst
@@ -214,14 +198,12 @@ protected:
 	bool dir_init_to_end;
 	ExprAst* end;
 	StmtAst* stmt;
-
 public:
 	ForAst(AssignAst* init_, bool dir_, ExprAst* fin_, StmtAst* stmt_);
 	~ForAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	SPL_IR toIR();
-
+	virtual Ast::SPL_IR codeGen();
 };
 
 class GotoAst final: public StmtAst
@@ -234,7 +216,7 @@ public:
 	int getlabel();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 };
 
 class CompoundAst final: public StmtAst
@@ -246,7 +228,7 @@ public:
 	~CompoundAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 };
 
 class FuncAst : public ExprAst
@@ -255,13 +237,12 @@ protected:
 	bool isProc;
 	std::string funcName;
 	std::vector<ExprAst*>* argList;
-	
 public:
 	FuncAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
 	~FuncAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	SPL_IR toIR(void);
+	virtual Ast::SPL_IR codeGen();
 };
 
 class SysFuncAst final:public FuncAst {
@@ -269,9 +250,7 @@ protected:
 	SYS_FUNC_ID id;
 public:
 	SysFuncAst(int sysFuncId_, std::vector<ExprAst*>* argList_);
-	SPL_IR toIR();
+	virtual Ast::SPL_IR codeGen();
 };
 
 }
-
-#endif
