@@ -23,13 +23,11 @@ class Ast {
 
 public:
 	AST_NODE_TYPE nodeType;
-	using SPL_IR = llvm::Value*;
 
 	//get the value of ast, if has not, return ERROR_NO_VAL
 	virtual valueUnion getValue() = 0;
 	//the function is for debug
 	virtual void __show(std::fstream& fout) = 0;
-	virtual SPL_IR codeGen() = 0;
 	virtual ~Ast() = 0;
 };
 
@@ -38,23 +36,25 @@ class ExprAst: public Ast
 {
 public:
 	SPL_TYPE valueType;
+	using SPL_IR = llvm::Value*;
 	//get Ast's value (if has)
 	virtual valueUnion getValue() = 0;
 	virtual void __show(std::fstream& fout) = 0;
 	virtual ~ExprAst() = 0;
+	virtual SPL_IR codeGen() = 0;
 };
 
 class MathAst final:public ExprAst {
 //such as expr + expr
 protected:
 	SPL_OP op;
-	ExprAst* lchild;
-	ExprAst* rchild;
+	std::unique_ptr<ExprAst> lchild;
+	std::unique_ptr<ExprAst> rchild;
 public:
 	MathAst(SPL_OP op, ExprAst* left = nullptr, ExprAst* right = nullptr);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 	~MathAst();
 };
 
@@ -69,7 +69,7 @@ public:
 	ConstAst(const std::string& x);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 	~ConstAst();
 };
 
@@ -81,45 +81,45 @@ public:
 	~SymbolAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 };
 
 class ArrayAst final: public ExprAst {
 protected:
 	//void print(void);
 	std::string arrayName;
-	SymbolAst* sym;
-	ExprAst* exp_index;
+	std::unique_ptr<SymbolAst> sym;
+	std::unique_ptr<ExprAst> exp_index;
 public:
 	ArrayAst(SymbolAst* sym_, ExprAst* exp_);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	~ArrayAst();
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 };
 
 class DotAst final:public ExprAst {
 protected:
-	SymbolAst* record;
-	SymbolAst* field;
+	std::unique_ptr<SymbolAst> record;
+	std::unique_ptr<SymbolAst> field;
 public:
 	DotAst(SymbolAst* record_, SymbolAst* field_);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	~DotAst();
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 };
 
 class AssignAst final:public ExprAst {
 protected:
-	ExprAst* lhs;
-	ExprAst* rhs;
+	std::unique_ptr<ExprAst> lhs;
+	std::unique_ptr<ExprAst> rhs;
 public:
 	AssignAst(ExprAst* lhs_, ExprAst* rhs_);
 	~AssignAst() ;
 	valueUnion getValue() ;
 	void __show(std::fstream& fout) ;
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 };
 
 
@@ -130,80 +130,82 @@ class StmtAst:public Ast
 	//the function is for debug
 	virtual void __show(std::fstream& fout) = 0;
 	virtual ~StmtAst() = 0;
+public:
+	virtual void codeGen();
 };
 
 class IfAst final:public StmtAst {
 protected:
-	ExprAst* cond;
-	StmtAst* ifStmt;
-	StmtAst* elseStmt;
+	std::unique_ptr<ExprAst> cond;
+	std::unique_ptr<StmtAst> ifStmt;
+	std::unique_ptr<StmtAst> elseStmt;
 public:
 	IfAst(ExprAst* cond_, StmtAst* doIf_, StmtAst* doElse_);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	void addRight(StmtAst* doElse_);
 	StmtAst* getDoElse(void);
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 	~IfAst();
 };
 
 class CaseUnit {
-	ExprAst* val;
-	StmtAst* stmt;
+	std::unique_ptr<ExprAst> val;
+	std::unique_ptr<StmtAst> stmt;
 	inline CaseUnit(ExprAst* val_, StmtAst* stmt_) : val(val_), stmt(stmt_) {}
 };
 
 class CaseAst final: public StmtAst {
 protected:
-	ExprAst* cond;
+	std::unique_ptr<ExprAst> cond;
 	std::vector<CaseUnit>* caseStmt;
 public:
 	CaseAst(ExprAst* cond, std::vector<CaseUnit>* caseStmt);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 	~CaseAst();
 };
 
 class WhileAst final: public StmtAst
 {
 protected:
-	ExprAst* cond;
-	StmtAst* stmt;
+	std::unique_ptr<ExprAst> cond;
+	std::unique_ptr<StmtAst> stmt;
 public:
 	WhileAst(ExprAst* cond_, StmtAst* stmt_);
 	~WhileAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout); 
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 };
 
 class RepeatAst final: public StmtAst
 {
 protected:
-	std::vector<StmtAst*>* stmtList;
-	ExprAst* exp;
+	std::vector<std::unique_ptr<StmtAst>>* stmtList;
+	std::unique_ptr<ExprAst> exp;
 public:
 	RepeatAst(std::vector<StmtAst*>* stmtList_, ExprAst* exp_);
 	~RepeatAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 };
 
 class ForAst final: public StmtAst
 {
 protected:
-	AssignAst* init;
+	std::unique_ptr<AssignAst> init;
 	bool dir_init_to_end;
-	ExprAst* end;
-	StmtAst* stmt;
+	std::unique_ptr<ExprAst> end;
+	std::unique_ptr<StmtAst> stmt;
 public:
 	ForAst(AssignAst* init_, bool dir_, ExprAst* fin_, StmtAst* stmt_);
 	~ForAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 };
 
 class GotoAst final: public StmtAst
@@ -216,19 +218,19 @@ public:
 	int getlabel();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 };
 
 class CompoundAst final: public StmtAst
 {
 protected:
-	std::vector<StmtAst*>* stmtList;
+	std::vector<std::unique_ptr<StmtAst>>* stmtList;
 public:
 	CompoundAst(std::vector<StmtAst*>* stmtList_);
 	~CompoundAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual void codeGen();
 };
 
 class FuncAst : public ExprAst
@@ -236,13 +238,43 @@ class FuncAst : public ExprAst
 protected:
 	bool isProc;
 	std::string funcName;
-	std::vector<ExprAst*>* argList;
+	std::vector<std::unique_ptr<ExprAst>> argList;
 public:
-	FuncAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
+	FuncAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*> argList_);
 	~FuncAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
+};
+
+class TypeAst
+{
+private:
+    std::string name;
+public:
+    TypeAst(const std::string& t_name);
+    llvm::Type* codeGen();
+};
+
+class RecordDeclAst
+{
+private:
+    std::string name;
+    std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> members;
+public:
+    RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members);
+    llvm::Value* codeGen();
+};
+
+class FuncDeclAst
+{
+private:
+    std::string name;
+    std::unique_ptr<CompoundAst> body;
+    std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> args;
+public:
+	FuncDeclAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
+    llvm::Function* codeGen();
 };
 
 class SysFuncAst final:public FuncAst {
@@ -250,7 +282,7 @@ protected:
 	SYS_FUNC_ID id;
 public:
 	SysFuncAst(int sysFuncId_, std::vector<ExprAst*>* argList_);
-	virtual Ast::SPL_IR codeGen();
+	virtual ExprAst::SPL_IR codeGen();
 };
 
 }
