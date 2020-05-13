@@ -272,6 +272,7 @@ private:
     std::string name;
     std::unique_ptr<CompoundAst> body;
     std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> args;
+	std::unique_ptr<TypeAst> ret_type;
 public:
 	FuncDeclAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
     llvm::Function* codeGen();
