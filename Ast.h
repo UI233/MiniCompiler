@@ -31,6 +31,16 @@ namespace SPL {
 		virtual ~Ast() = 0;
 	};
 
+	class LabelAst final: public Ast {
+	private:
+		int label;
+		std::unique_ptr<Ast> nonLabelAst;
+	public:
+		LabelAst(int label_, Ast* nonLabelAst_);
+		ExprAst::SPL_IR codeGen() const;
+		~LabelAst();
+	};
+
 	class ExprAst : public Ast
 		// ExprAst is Ast those has value, such as 2+3(MathAst),a[i](ArrayAst),a = 2+3, ...
 	{
@@ -42,6 +52,12 @@ namespace SPL {
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~ExprAst() = 0;
 		virtual SPL_IR codeGen() const = 0;
+	};
+
+	class IndexAst {
+	public:
+		IndexAst();
+		~IndexAst();
 	};
 
 	class MathAst final :public ExprAst {
@@ -58,7 +74,7 @@ namespace SPL {
 		~MathAst();
 	};
 
-	class ConstAst final : public ExprAst {
+	class ConstAst final : public ExprAst,public IndexAst {
 	protected:
 		valueUnion value;
 	public:
@@ -73,7 +89,7 @@ namespace SPL {
 		~ConstAst();
 	};
 
-	class SymbolAst final : public ExprAst {
+	class SymbolAst final : public ExprAst,public IndexAst {
 	protected:
 		std::string name;
 	public:
@@ -302,17 +318,24 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
+	class TypeDeclAst {
+	private:
+		std::string name;
+		std::unique_ptr<TypeAst> type;
+	public:
+		TypeDeclAst(std::string& name_, TypeAst* type_);
+		llvm::Value* codeGen() const;
+	};
+
+	
+
 	class ArrayDeclAst {
 	private:
 		std::string name;
-		bool explicitIndex;
-		int minIndex_int;
-		int maxIndex_int;
-		std::unique_ptr<ConstAst> minIndex_const;
-		std::unique_ptr<ConstAst> maxIndex_const;
+		std::unique_ptr<IndexAst> minIndex;
+		std::unique_ptr<IndexAst> maxIndex;
 		std::unique_ptr<TypeAst> type;
 	public:
-		ArrayDeclAst(std::string& name_, int minIndex_, int maxIndex_, TypeAst* type);
 		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type);
 		llvm::Value* codeGen(); const;
 	};
