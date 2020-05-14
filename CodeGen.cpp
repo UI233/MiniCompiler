@@ -10,12 +10,14 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "Ast.h"
+#include "SymbolTable.h"
 
 namespace SPL 
 {
 static llvm::LLVMContext context;
 static llvm::IRBuilder<> builder(context);
 static llvm::Module module("MainModule", context);
+static SymbolTable st;
 
 void logError(const std::string& err) 
 {
@@ -58,15 +60,17 @@ ExprAst::SPL_IR MathAst::codeGen() const
     {
         return ty->isDoubleTy() || ty->isIntegerTy();
     };
-    auto lhs = lchild->codeGen();
-    auto rhs = rchild->codeGen();
-    llvm::Type* lhs_ty = lhs->getType();
-    auto rhs_ty = rhs->getType();
-    if (lhs || rhs) 
+    if (!lchild || !rchild) 
     {
         logError("Invalid number of operand for operator");
         return nullptr;
     }
+    auto lhs = lchild->codeGen();
+    auto rhs = rchild->codeGen();
+    if (!lhs || !rhs)
+        return nullptr;
+    llvm::Type* lhs_ty = lhs->getType();
+    auto rhs_ty = rhs->getType();
     if (!isSupportedType(lhs_ty) || !isSupportedType(rhs_ty))
     {
         logError("Invalid type of operand for operator");
@@ -120,7 +124,7 @@ ExprAst::SPL_IR MathAst::codeGen() const
     OP_EQUAL:
         return is_fp ? builder.CreateFCmpOEQ(lhs, rhs, "feqtmp") : builder.CreateICmpEQ(lhs, rhs, "eqtmp");
     OP_UNEQUAL:
-        return is_fp ? builder.CreateFCmpUEQ(lhs, rhs, "fueqtmp") : builder.CreateICmpNE(lhs, rhs, "remtmp");
+        return is_fp ? builder.CreateFCmpONE(lhs, rhs, "funetmp") : builder.CreateICmpNE(lhs, rhs, "remtmp");
     OP_OR:
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
     OP_AND:
@@ -128,23 +132,132 @@ ExprAst::SPL_IR MathAst::codeGen() const
     }
 }
 
+ExprAst::SPL_IR SymbolAst::genPtr() const
+{
+    return st.getVarSymbol(name);
+}
+
 ExprAst::SPL_IR SymbolAst::codeGen() const
 {
+    auto ptr = genPtr();
+    if (ptr == nullptr)
+    {
+        logError("Not a variable");
+        return nullptr;
+    }
 
+    return builder.CreateLoad(ptr);
+}
+
+ExprAst::SPL_IR ArrayAst::genPtr() const
+{
+    llvm::Value* array = st.getVarSymbol(arrayName);    
+    if (!array->getType()->isArrayTy())
+    {
+        logError("Variable is not array type");
+        return nullptr;
+    }
+    llvm::Value* index = exp_index->codeGen();
+    llvm::Value* offset = st.getArraySymbol(arrayName);
+    llvm::Value* offset_index = builder.CreateAdd(index, offset);
+    if (!index->getType()->isIntegerTy())
+    {
+        logError("Non-integer index");
+        return nullptr;
+    }
+    auto element_ptr = builder.CreateInBoundsGEP(array, offset_index);
+    return element_ptr;
 }
 
 ExprAst::SPL_IR ArrayAst::codeGen() const
 {
+    auto ptr = genPtr();
+    if (ptr == nullptr)
+    {
+        logError("Not a variable");
+        return nullptr;
+    }
+
+    return builder.CreateLoad(ptr);
+}
+
+ExprAst::SPL_IR DotAst::genPtr() const
+{
+    auto record_ptr = record->genPtr();
+    auto struct_mem = st.getRecordSymbol(record->codeGen()->getType()->getStructName()).second;
+    if (!struct_mem.count(field))
+    {
+        logError("Record doesn't have field " + field);
+        return nullptr;
+    }
+    return builder.CreateInBoundsGEP(record_ptr, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), struct_mem[field]));
+}
+
+ExprAst::SPL_IR DotAst::codeGen() const
+{
+    auto ptr = genPtr();
+    if (ptr == nullptr)
+    {
+        logError("Not a variable");
+        return nullptr;
+    }
+
+    return builder.CreateLoad(ptr);
 }
 
 ExprAst::SPL_IR FuncAst::codeGen() const
 {
+    auto func = st.getFuncSymbol(funcName);
+    if (argList.size() != func.second.size())
+    {
+        logError("Wrong number of parameters passed");
+        return nullptr;
+    }
+    std::vector<llvm::Value*> argsv;
+    int idx = 0;
+    for (auto& arg: func.first->args())
+    {
+        bool is_var = func.second[idx++];
+        if (is_var)
+        {
+            auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
+            if (!var_ptr)
+            {
+                logError("Right value cannot be refered");
+                return nullptr;
+            }
+            argsv.push_back(var_ptr->genPtr());
+        }
+        else
+            argsv.push_back(argList[idx]->codeGen());
+        if (!argsv.back())
+            return nullptr;
+        ++idx;
+    }
 
+    return builder.CreateCall(func.first, argsv);
 }
 
 ExprAst::SPL_IR AssignAst::codeGen() const
 {
-
+    auto variable = lhs->codeGen();
+    auto value = rhs->codeGen();
+    if (variable == nullptr || value == nullptr)
+        return nullptr;
+    if (!dynamic_cast<DotAst*>(lhs.get()) && !dynamic_cast<SymbolAst*>(lhs.get()) && !dynamic_cast<ArrayAst*>(lhs.get()))
+    {
+        logError("Right value cannot be assigned");
+        return nullptr;
+    }
+    if (variable->getType() != value->getType())
+    {
+        logError("Type unmatched");
+        return nullptr;
+    }
+    
+    auto var_ptr = lhs -> genPtr();
+    return builder.CreateStore(value, var_ptr);
 }
+
 
 }

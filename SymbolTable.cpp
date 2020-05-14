@@ -1,69 +1,60 @@
 #include "SymbolTable.h"
 
-SymbolTable::SymbolType SymbolTable::getSymbolType(const std::string& name) const
+int SymbolTable::getSymbolType(const std::string& name) const
 {
+    int symbol_type = 0;
     if (named_function.count(name))
-        return FUNCTION;
-    else if(named_variable.count(name))
-        return VAR;
-    else if(named_record.count(name))
-        return RECORD;
-    else if (named_label.count(name))
-        return LABEL;
-    else
-        return OTHER;
+        symbol_type |= FUNCTION;
+    if(named_variable.count(name))
+        symbol_type |= VAR;
+    if(named_record.count(name))
+        symbol_type |= RECORD;
+    if (named_label.count(name))
+        symbol_type |= LABEL;
+    if (named_array.count(name))
+        symbol_type |= ARRAY;
+    return symbol_type;
 }
 
-llvm::Function* SymbolTable::getFuncSymbol(const std::string& name) const
+SymbolTable::NamedFunction SymbolTable::getFuncSymbol(const std::string& name) const
 {
-    switch (getSymbolType(name))
-    {
-    case FUNCTION:
+    if (getSymbolType(name) | FUNCTION)
         return named_function.find(name)->second;
-        break;
-    default:
-        return nullptr;
-        break;
-    }
+    else
+        return NamedFunction();
 }
 
 SymbolTable::NamedStruct SymbolTable::getRecordSymbol(const std::string& name) const
 {
-    switch (getSymbolType(name))
-    {
-    case RECORD:
+    if (getSymbolType(name) | RECORD)
         return named_record.find(name)->second;
-        break;
-    default:
-        return std::make_pair(nullptr, std::vector<std::string>());
-        break;
-    }
+    else
+        return std::make_pair(nullptr, std::map<std::string, int>());
+}
+
+SymbolTable::NamedArray SymbolTable::getArraySymbol(const std::string& name) const
+{
+    if (getSymbolType(name) | ARRAY)
+        return named_array.find(name)->second;
+    else
+        return NamedArray();
+
 }
 
 llvm::Value* SymbolTable::getVarSymbol(const std::string& name) const
 {
-    switch (getSymbolType(name))
-    {
-    case VAR:
+    if (getSymbolType(name) | VAR)
         return named_variable.find(name)->second;
-        break;
-    default:
+    else
         return nullptr;
-        break;
-    }
 }
 
 llvm::BasicBlock* SymbolTable::getLabelSymbol(const std::string& name) const
 {
-    switch (getSymbolType(name))
-    {
-    case LABEL:
+    if (getSymbolType(name) | LABEL)
         return named_label.find(name)->second;
-        break;
-    default:
+    else
         return nullptr;
-        break;
-    }
 }
 
 bool SymbolTable::hasName(const std::string& name) const

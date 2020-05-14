@@ -7,25 +7,32 @@
 class SymbolTable
 {
 public:
-    using NamedStruct = std::pair<llvm::StructType*, std::vector<std::string>>;
+    using NamedStruct = std::pair<llvm::StructType*, std::map<std::string, int>>;
+    using NamedArray = llvm::Value*;
+    using NamedFunction = std::pair<llvm::Function*, std::vector<bool>>;
 private:
     std::unordered_map<std::string, llvm::Value*> named_variable;
     std::unordered_map<std::string, NamedStruct> named_record;
-    std::unordered_map<std::string, llvm::Function*> named_function;
+    std::unordered_map<std::string, NamedArray> named_array;
+    std::unordered_map<std::string, NamedFunction> named_function;
     std::unordered_map<std::string, llvm::BasicBlock*> named_label;
+    std::unordered_map<std::string, llvm::Type*> named_type;
 public:
     enum SymbolType
     {
-        RECORD,
-        FUNCTION,
-        VAR,
-        LABEL,
-        OTHER
+        RECORD = 1,
+        FUNCTION = 2,
+        VAR = 4,
+        LABEL = 8,
+        TYPE = 16,
+        ARRAY = 32,
+        OTHER = 0
     };
 
-    SymbolType getSymbolType(const std::string& name) const;
-    llvm::Function* getFuncSymbol(const std::string& name) const;
+    int getSymbolType(const std::string& name) const;
+    NamedFunction getFuncSymbol(const std::string& name) const;
     NamedStruct getRecordSymbol(const std::string& name) const;
+    NamedArray getArraySymbol(const std::string& name) const;
     llvm::Value* getVarSymbol(const std::string& name) const;
     llvm::BasicBlock* getLabelSymbol(const std::string& name) const;
     bool hasName(const std::string& name) const;
