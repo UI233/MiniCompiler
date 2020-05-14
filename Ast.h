@@ -205,12 +205,13 @@ namespace SPL {
 	class ForAst final : public StmtAst
 	{
 	protected:
-		std::unique_ptr<AssignAst> init;
-		bool dir_init_to_end;
+		std::unique_ptr<SymbolAst> loop_var;
+		std::unique_ptr<ExprAst> init;
 		std::unique_ptr<ExprAst> end;
 		std::unique_ptr<StmtAst> stmt;
+		bool dir_init_to_end;
 	public:
-		ForAst(AssignAst* init_, bool dir_, ExprAst* fin_, StmtAst* stmt_);
+		ForAst(SymbolAst* id_, ExprAst* init, bool dir_, ExprAst* fin_, StmtAst* stmt_);
 		~ForAst();
 		valueUnion getValue(std::fstream& fout);
 		void __show();
@@ -220,9 +221,9 @@ namespace SPL {
 	class GotoAst final : public StmtAst
 	{
 	protected:
-		int label;
+		std::string label;
 	public:
-		GotoAst(int label_);
+		GotoAst(const std::string& label_);
 		~GotoAst();
 		int getlabel();
 		valueUnion getValue();
@@ -320,9 +321,9 @@ namespace SPL {
 	{
 	private:
 		std::string name;
-		SPL_TYPE type;
+		std::unique_ptr<TypeAst> type;
 	public:
-		SimpleVarDeclAst(std::string& name_, SPL_TYPE type);
+		SimpleVarDeclAst(std::string& name_, TypeAst* type_);
 		llvm::Value* codeGen() const;
 	};
 
@@ -334,8 +335,6 @@ namespace SPL {
 		TypeDeclAst(std::string& name_, TypeAst* type_);
 		llvm::Value* codeGen() const;
 	};
-
-	
 
 	class ArrayDeclAst {
 	private:

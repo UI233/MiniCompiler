@@ -59,5 +59,12 @@ llvm::BasicBlock* SymbolTable::getLabelSymbol(const std::string& name) const
 
 bool SymbolTable::hasName(const std::string& name) const
 {
-    return named_function.count(name) || named_record.count(name) || named_variable.count(name);
+    return getSymbolType(name) != 0;
+}
+
+void SymbolTable::insertVar(const std::string& name, llvm::Value* ptr)
+{
+    if (hasName(name))
+        throw "collision in symbol table";
+    named_variable.insert(std::make_pair(name, ptr));
 }

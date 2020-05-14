@@ -26,6 +26,7 @@ public:
         LABEL = 8,
         TYPE = 16,
         ARRAY = 32,
+        CONST = 64,
         OTHER = 0
     };
 
@@ -35,6 +36,7 @@ public:
     NamedArray getArraySymbol(const std::string& name) const;
     llvm::Value* getVarSymbol(const std::string& name) const;
     llvm::BasicBlock* getLabelSymbol(const std::string& name) const;
+    void insertVar(const std::string& name, llvm::Value* ptr);
     bool hasName(const std::string& name) const;
 
     SymbolTable() = default;

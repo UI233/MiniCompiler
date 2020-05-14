@@ -32,7 +32,7 @@ int getIntTyWidth(llvm::Type* ty)
     );
 }
 
-ExprAst::SPL_IR ConstAst::codeGen() const
+Ast::SPL_IR ConstAst::codeGen() const
 {
     switch(valueType)
     {
@@ -54,7 +54,7 @@ ExprAst::SPL_IR ConstAst::codeGen() const
     }
 }
 
-ExprAst::SPL_IR MathAst::codeGen() const
+Ast::SPL_IR MathAst::codeGen() const
 {
     static auto isSupportedType = [](llvm::Type* ty)
     {
@@ -132,12 +132,12 @@ ExprAst::SPL_IR MathAst::codeGen() const
     }
 }
 
-ExprAst::SPL_IR SymbolAst::genPtr() const
+Ast::SPL_IR SymbolAst::genPtr() const
 {
     return st.getVarSymbol(name);
 }
 
-ExprAst::SPL_IR SymbolAst::codeGen() const
+Ast::SPL_IR SymbolAst::codeGen() const
 {
     auto ptr = genPtr();
     if (ptr == nullptr)
@@ -149,7 +149,7 @@ ExprAst::SPL_IR SymbolAst::codeGen() const
     return builder.CreateLoad(ptr);
 }
 
-ExprAst::SPL_IR ArrayAst::genPtr() const
+Ast::SPL_IR ArrayAst::genPtr() const
 {
     llvm::Value* array = st.getVarSymbol(arrayName);    
     if (!array->getType()->isArrayTy())
@@ -169,7 +169,7 @@ ExprAst::SPL_IR ArrayAst::genPtr() const
     return element_ptr;
 }
 
-ExprAst::SPL_IR ArrayAst::codeGen() const
+Ast::SPL_IR ArrayAst::codeGen() const
 {
     auto ptr = genPtr();
     if (ptr == nullptr)
@@ -181,7 +181,7 @@ ExprAst::SPL_IR ArrayAst::codeGen() const
     return builder.CreateLoad(ptr);
 }
 
-ExprAst::SPL_IR DotAst::genPtr() const
+Ast::SPL_IR DotAst::genPtr() const
 {
     auto record_ptr = record->genPtr();
     auto struct_mem = st.getRecordSymbol(record->codeGen()->getType()->getStructName()).second;
@@ -193,7 +193,7 @@ ExprAst::SPL_IR DotAst::genPtr() const
     return builder.CreateInBoundsGEP(record_ptr, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), struct_mem[field]));
 }
 
-ExprAst::SPL_IR DotAst::codeGen() const
+Ast::SPL_IR DotAst::codeGen() const
 {
     auto ptr = genPtr();
     if (ptr == nullptr)
@@ -205,7 +205,7 @@ ExprAst::SPL_IR DotAst::codeGen() const
     return builder.CreateLoad(ptr);
 }
 
-ExprAst::SPL_IR FuncAst::codeGen() const
+Ast::SPL_IR FuncAst::codeGen() const
 {
     auto func = st.getFuncSymbol(funcName);
     if (argList.size() != func.second.size())
@@ -232,13 +232,17 @@ ExprAst::SPL_IR FuncAst::codeGen() const
             argsv.push_back(argList[idx]->codeGen());
         if (!argsv.back())
             return nullptr;
+        if (argsv.back()->getType() != arg.getType())
+        {
+            logError("Parameter's type unmatched");
+            return nullptr;
+        }
         ++idx;
     }
-
     return builder.CreateCall(func.first, argsv);
 }
 
-ExprAst::SPL_IR AssignAst::codeGen() const
+Ast::SPL_IR AssignAst::codeGen() const
 {
     auto variable = lhs->codeGen();
     auto value = rhs->codeGen();
@@ -259,5 +263,161 @@ ExprAst::SPL_IR AssignAst::codeGen() const
     return builder.CreateStore(value, var_ptr);
 }
 
+llvm::Type* TypeAst::codeGen() const
+{
+    auto struct_type = module.getTypeByName(name);
+    if (struct_type)
+        return struct_type;
+    if (name == "boolean")
+        return llvm::Type::getInt1Ty(context);
+    if (name == "integer")
+        return llvm::Type::getInt32Ty(context);
+    if (name == "char")
+        return llvm::Type::getInt8Ty(context);
+    if (name == "boolean")
+        return llvm::Type::getInt1Ty(context);
+    logError("Undefined type");
+    return nullptr;
+}
+
+Ast::SPL_IR SimpleVarDeclAst::codeGen() const
+{
+    auto var_t = this->type->codeGen();
+    if (!var_t)
+        return nullptr;
+    if (st.hasName(name))
+    {
+        logError("Redefinition of variable");
+        return nullptr;
+    }
+
+    auto var = builder.CreateAlloca(var_t);
+    st.insertVar(name, var);
+    return nullptr;
+}
+
+llvm::Function* FuncDeclAst::codeGen() const
+{
+
+}
+
+Ast::SPL_IR IfAst::codeGen() const
+{
+    auto condv = cond->codeGen();
+    if (!condv)
+        return nullptr;
+    if (!condv->getType()->isIntegerTy(1))
+    {
+        logError("Condition expression should be boolean");
+        return nullptr;
+    }
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto thenbb = llvm::BasicBlock::Create(context, "thenbb", thefunc);
+    auto elsebb = llvm::BasicBlock::Create(context, "elsebb");
+    auto mergebb = llvm::BasicBlock::Create(context, "mergebb");
+    builder.CreateCondBr(condv, thenbb, elsebb);
+    builder.SetInsertPoint(thenbb);
+    ifStmt->codeGen();
+    builder.CreateBr(mergebb);
+    thefunc->getBasicBlockList().push_back(elsebb);
+    builder.SetInsertPoint(elsebb);
+    if (elseStmt)
+        elseStmt->codeGen();
+    builder.CreateBr(mergebb);
+    thefunc->getBasicBlockList().push_back(mergebb);
+    builder.SetInsertPoint(mergebb);
+    return nullptr;
+}
+
+Ast::SPL_IR ForAst::codeGen() const
+{
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto initbb = llvm::BasicBlock::Create(context, "initbb", thefunc);
+    auto bodybb = llvm::BasicBlock::Create(context, "bodybb");
+    auto calcbb = llvm::BasicBlock::Create(context, "calcbb");
+    auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
+    builder.CreateBr(initbb);
+    builder.SetInsertPoint(initbb);
+    auto loopv_ptr = loop_var->genPtr();
+    auto loopv = init->codeGen();
+    if (!loopv->getType()->isIntegerTy() || !loopv_ptr->getType()->isIntegerTy())
+    {
+        logError("Loop variable should be integer");
+        return nullptr;
+    }
+    builder.CreateStore(loopv, loopv_ptr);
+    auto endv = end->codeGen();
+    if (!endv)
+        return nullptr;
+    auto condv = builder.CreateICmpEQ(loopv, endv);
+    builder.CreateCondBr(condv, afterbb, bodybb);
+    thefunc->getBasicBlockList().push_back(bodybb);
+    builder.SetInsertPoint(bodybb);
+    stmt->codeGen();
+    loopv = builder.CreateLoad(loopv_ptr);
+    condv = builder.CreateICmpEQ(loopv, endv);
+    builder.CreateCondBr(condv, afterbb, calcbb);
+    thefunc->getBasicBlockList().push_back(calcbb);
+    builder.SetInsertPoint(calcbb);
+    loopv = builder.CreateLoad(loopv_ptr);
+    if (dir_init_to_end)
+        loopv = builder.CreateAdd(loopv, llvm::ConstantInt::get(loopv->getType(), 1));
+    else 
+        loopv = builder.CreateSub(loopv, llvm::ConstantInt::get(loopv->getType(), 1));
+    builder.CreateStore(loopv, loopv_ptr);
+    builder.CreateBr(bodybb);
+    thefunc->getBasicBlockList().push_back(afterbb);
+    builder.SetInsertPoint(afterbb);
+    return nullptr;
+}
+
+Ast::SPL_IR WhileAst::codeGen() const
+{
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto entrybb = llvm::BasicBlock::Create(context, "entrybb", thefunc);
+    auto bodybb = llvm::BasicBlock::Create(context, "bodybb");
+    auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
+    builder.CreateBr(entrybb);
+    builder.SetInsertPoint(entrybb);
+    auto condv = cond->codeGen();
+    if (!condv->getType()->isIntegerTy(1))
+    {
+        logError("Conditional expression should be boolean");
+        return nullptr;
+    }
+    builder.CreateCondBr(condv, bodybb, afterbb);
+    thefunc->getBasicBlockList().push_back(bodybb);
+    builder.SetInsertPoint(bodybb);
+    stmt->codeGen();
+    builder.CreateBr(entrybb);
+    thefunc->getBasicBlockList().push_back(afterbb);
+    builder.SetInsertPoint(afterbb);
+    return nullptr;
+}
+
+Ast::SPL_IR RepeatAst::codeGen() const
+{
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto bodybb = llvm::BasicBlock::Create(context, "bodybb", thefunc);
+    auto exitbb = llvm::BasicBlock::Create(context, "exitbb");
+    auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
+    builder.CreateBr(bodybb);
+    builder.SetInsertPoint(bodybb);
+    for (auto& stmt: stmtList)
+        stmt->codeGen();
+    builder.CreateBr(exitbb);
+    thefunc->getBasicBlockList().push_back(exitbb);
+    builder.SetInsertPoint(exitbb);
+    auto condv = exp->codeGen();
+    if (!condv->getType()->isIntegerTy(1))
+    {
+        logError("Conditional expression should be boolean");
+        return nullptr;
+    }
+    builder.CreateCondBr(condv, afterbb, bodybb);
+    thefunc->getBasicBlockList().push_back(afterbb);
+    builder.SetInsertPoint(afterbb);
+    return nullptr;
+}
 
 }
