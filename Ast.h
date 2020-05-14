@@ -274,10 +274,11 @@ namespace SPL {
 	private:
 		std::string name;
 		std::unique_ptr<CompoundAst> body;
-		std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> args;
+		std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> varArgs;
+		std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> valArgs;
 		std::unique_ptr<TypeAst> ret_type;
 	public:
-		FuncDeclAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
+		FuncDeclAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* varArgList_, std::vector<ExprAst*>* valArgList_);
 		llvm::Function* codeGen() const;
 	};
 
@@ -304,11 +305,15 @@ namespace SPL {
 	class ArrayDeclAst {
 	private:
 		std::string name;
-		int minIndex;
-		int maxIndex;
+		bool explicitIndex;
+		int minIndex_int;
+		int maxIndex_int;
+		std::unique_ptr<ConstAst> minIndex_const;
+		std::unique_ptr<ConstAst> maxIndex_const;
 		std::unique_ptr<TypeAst> type;
 	public:
 		ArrayDeclAst(std::string& name_, int minIndex_, int maxIndex_, TypeAst* type);
+		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type);
 		llvm::Value* codeGen(); const;
 	};
 
