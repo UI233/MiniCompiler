@@ -41,7 +41,7 @@ public:
 	virtual valueUnion getValue() = 0;
 	virtual void __show(std::fstream& fout) = 0;
 	virtual ~ExprAst() = 0;
-	virtual SPL_IR codeGen() = 0;
+	virtual SPL_IR codeGen() const = 0;
 };
 
 class MathAst final:public ExprAst {
@@ -54,7 +54,7 @@ public:
 	MathAst(SPL_OP op, ExprAst* left = nullptr, ExprAst* right = nullptr);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const override;
 	~MathAst();
 };
 
@@ -69,7 +69,7 @@ public:
 	ConstAst(const std::string& x);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const;
 	~ConstAst();
 };
 
@@ -81,7 +81,7 @@ public:
 	~SymbolAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const;
 };
 
 class ArrayAst final: public ExprAst {
@@ -95,19 +95,7 @@ public:
 	valueUnion getValue();
 	void __show(std::fstream& fout);
 	~ArrayAst();
-	virtual ExprAst::SPL_IR codeGen();
-};
-
-class DotAst final:public ExprAst {
-protected:
-	std::unique_ptr<SymbolAst> record;
-	std::unique_ptr<SymbolAst> field;
-public:
-	DotAst(SymbolAst* record_, SymbolAst* field_);
-	valueUnion getValue();
-	void __show(std::fstream& fout);
-	~DotAst();
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const;
 };
 
 class AssignAst final:public ExprAst {
@@ -119,10 +107,8 @@ public:
 	~AssignAst() ;
 	valueUnion getValue() ;
 	void __show(std::fstream& fout) ;
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const;
 };
-
-
 
 class StmtAst:public Ast
 // StmtAst is Ast those has not value.
@@ -131,7 +117,7 @@ class StmtAst:public Ast
 	virtual void __show(std::fstream& fout) = 0;
 	virtual ~StmtAst() = 0;
 public:
-	virtual void codeGen();
+	virtual void codeGen() const;
 };
 
 class IfAst final:public StmtAst {
@@ -145,7 +131,7 @@ public:
 	void __show(std::fstream& fout);
 	void addRight(StmtAst* doElse_);
 	StmtAst* getDoElse(void);
-	virtual void codeGen();
+	void codeGen() const override;
 	~IfAst();
 };
 
@@ -163,7 +149,7 @@ public:
 	CaseAst(ExprAst* cond, std::vector<CaseUnit>* caseStmt);
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual void codeGen();
+	void codeGen() const override;
 	~CaseAst();
 };
 
@@ -177,7 +163,7 @@ public:
 	~WhileAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout); 
-	virtual void codeGen();
+	void codeGen() const override;
 };
 
 class RepeatAst final: public StmtAst
@@ -190,7 +176,7 @@ public:
 	~RepeatAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	virtual void codeGen();
+	void codeGen() const override;
 };
 
 class ForAst final: public StmtAst
@@ -205,7 +191,7 @@ public:
 	~ForAst();
 	valueUnion getValue(std::fstream& fout);
 	void __show();
-	virtual void codeGen();
+	void codeGen() const override;
 };
 
 class GotoAst final: public StmtAst
@@ -218,7 +204,7 @@ public:
 	int getlabel();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual void codeGen();
+	void codeGen() const override;
 };
 
 class CompoundAst final: public StmtAst
@@ -230,7 +216,7 @@ public:
 	~CompoundAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual void codeGen();
+	void codeGen() const override;
 };
 
 class FuncAst : public ExprAst
@@ -244,7 +230,7 @@ public:
 	~FuncAst();
 	valueUnion getValue();
 	void __show(std::fstream& fout);
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const override;
 };
 
 class TypeAst
@@ -253,8 +239,22 @@ private:
     std::string name;
 public:
     TypeAst(const std::string& t_name);
-    llvm::Type* codeGen();
+    llvm::Type* codeGen() const;
 };
+
+
+class DotAst final:public ExprAst {
+protected:
+	std::unique_ptr<TypeAst> record;
+	std::string field;
+public:
+	DotAst(SymbolAst* record_, SymbolAst* field_);
+	valueUnion getValue();
+	void __show(std::fstream& fout);
+	~DotAst();
+	ExprAst::SPL_IR codeGen() const;
+};
+
 
 class RecordDeclAst
 {
@@ -263,7 +263,7 @@ private:
     std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> members;
 public:
     RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members);
-    llvm::Value* codeGen();
+    llvm::Value* codeGen() const;
 };
 
 class FuncDeclAst
@@ -275,7 +275,7 @@ private:
 	std::unique_ptr<TypeAst> ret_type;
 public:
 	FuncDeclAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*>* argList_);
-    llvm::Function* codeGen();
+    llvm::Function* codeGen() const;
 };
 
 class SysFuncAst final:public FuncAst {
@@ -283,7 +283,7 @@ protected:
 	SYS_FUNC_ID id;
 public:
 	SysFuncAst(int sysFuncId_, std::vector<ExprAst*>* argList_);
-	virtual ExprAst::SPL_IR codeGen();
+	ExprAst::SPL_IR codeGen() const override;
 };
 
 }
