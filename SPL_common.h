@@ -51,6 +51,16 @@ enum AST_NODE_TYPE {
 	AST_SYSFUNC
 };
 
+union valueUnion {
+	char    valChar;
+	bool    valBool;
+	int     valInt;
+	double  valDouble;
+	std::string* valString;
+	valueUnion() {}
+	~valueUnion() {}
+};
+
 enum SYS_FUNC_ID {
 	SQRT = 1
 };

@@ -14,10 +14,11 @@
 
 namespace SPL 
 {
-static llvm::LLVMContext context;
-static llvm::IRBuilder<> builder(context);
-static llvm::Module module("MainModule", context);
-static SymbolTable st;
+constexpr int ERRORNO = -2184744;
+llvm::LLVMContext context;
+llvm::IRBuilder<> builder(context);
+llvm::Module module("MainModule", context);
+SymbolTable st;
 
 void logError(const std::string& err) 
 {
@@ -30,6 +31,23 @@ int getIntTyWidth(llvm::Type* ty)
         ty->isIntegerTy(8) ? 8 :
         (ty->isIntegerTy(32) ? 32 : -1)
     );
+}
+
+int ConstAst::genIndex() const
+{
+    return value.valInt;
+}
+
+int SymbolAst::genIndex() const
+{
+    auto constant = st.getConstant(name);
+    if (!constant.first)
+    {
+        logError("Index is not constant");
+        return ERRORNO;
+    }
+
+    return constant.second.valInt;
 }
 
 Ast::SPL_IR ConstAst::codeGen() const
@@ -139,14 +157,17 @@ Ast::SPL_IR SymbolAst::genPtr() const
 
 Ast::SPL_IR SymbolAst::codeGen() const
 {
-    auto ptr = genPtr();
-    if (ptr == nullptr)
-    {
-        logError("Not a variable");
-        return nullptr;
+    if (st.getSymbolType(name) | SymbolTable::CONST)
+        return st.getConstant(name).first;
+    else {
+        auto ptr = genPtr();
+        if (ptr == nullptr)
+        {
+            logError("Not a variable");
+            return nullptr;
+        }
+        return builder.CreateLoad(ptr);
     }
-
-    return builder.CreateLoad(ptr);
 }
 
 Ast::SPL_IR ArrayAst::genPtr() const
@@ -298,7 +319,173 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
 
 llvm::Function* FuncDeclAst::codeGen() const
 {
+    if (st.hasName(name))
+    {
+        logError("Name collision");
+        return nullptr;
+    }
+    // generate the prototype of function
+    std::vector<llvm::Type*> arg_tys;
+    int idx = 0;
+    for (auto& arg: args)
+    {
+        auto arg_ty = arg.first->codeGen();
+        if (!arg_ty)
+        {
+            logError("Undefined type");
+            return nullptr;
+        }
+        if (is_var[idx++])
+            arg_ty = arg_ty->getPointerTo();
+        arg_tys.push_back(arg_ty);
+    }
+    auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->codeGen();
+    if (!ret_ty)
+    {
+        logError("Undefined type");
+        return nullptr;
+    }
+    auto func_ty = llvm::FunctionType::get(ret_ty, arg_tys, false);
+    auto func = llvm::Function::Create(func_ty, llvm::Function::ExternalLinkage, name, &module);
+    idx = 0;
+    for (auto& arg: func->args())
+        arg.setName(args[idx++].second);
+    st.insertFunction(name, func, is_var);
+    // parameter pass of function    
+    st.pushScope();
+    auto entrybb = llvm::BasicBlock::Create(context, "entry", func);
+    builder.SetInsertPoint(entrybb);
+    std::vector<std::string> local_var;
+    idx = 0;
+    for (auto& arg: func->args())
+    {
+        local_var.push_back(arg.getName());
+        if (is_var[idx++])
+        {
+            st.insertVar(arg.getName(), &arg);
+        }
+        else 
+        {
+            auto tmp_ptr = builder.CreateAlloca(arg.getType());
+            builder.CreateStore(tmp_ptr, &arg);
+            st.insertVar(arg.getName(), tmp_ptr);
+        }
+        local_var.push_back(arg.getName());
+    }
+    llvm::Value* ret_ptr = nullptr;
+    if (!ret_ty->isVoidTy())
+    {
+        ret_ptr = builder.CreateAlloca(ret_ty);
+        st.insertVar("0" + name, ret_ptr);
+        local_var.push_back("0" + name);
+    }
+    // generate body of function
+    body->codeGen();
+    if (!ret_ty->isVoidTy())
+    {
+        auto ret_v = builder.CreateLoad(ret_ptr);
+        builder.CreateRet(ret_v);
+    }
+    // remove local variable from symbol table
+    st.popScope();
+    return func;
+}
 
+Ast::SPL_IR RecordDeclAst::codeGen() const
+{
+    if (st.hasName(name))
+    {
+        logError("Collision of name");
+        return nullptr;
+    }
+    std::vector<llvm::Type*> member_ty;
+    for (auto& member: members)
+    {
+        member_ty.push_back(member.first->codeGen());
+        if (!member_ty.back())
+        {
+            logError("Undefined type");
+            return nullptr;
+        }
+    }
+    llvm::StructType::get(context, member_ty);
+    return nullptr;
+}
+
+Ast::SPL_IR ConstDeclAst::codeGen() const
+{
+    if (st.hasName(name))
+    {
+        logError("Redefinition of variable");
+        return nullptr;
+    }
+
+    switch(type)
+    {
+    REAL:
+        st.insertConstant(name, llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), const_value.valDouble), const_value);
+        return nullptr;
+    BOOL:
+        st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), const_value.valBool), const_value);
+        return nullptr;
+    CHAR:
+        st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), const_value.valChar), const_value);
+        return nullptr;
+    INT:
+        st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), const_value.valInt), const_value);
+        return nullptr;
+    default:
+        logError("This type cannot be constant");
+        return nullptr;
+    }
+    return nullptr;
+}
+
+Ast::SPL_IR ArrayDeclAst::codeGen() const
+{
+    if (st.hasName(name))
+    {
+        logError("Redefinition of variable");
+        return nullptr;
+    }
+    
+    int min_value = minIndex->genIndex();
+    int max_value = maxIndex->genIndex();
+    int length = max_value - min_value + 1;
+    if (min_value == ERRORNO || max_value == ERRORNO)
+        return nullptr;
+    if (length <= 0)
+    {
+        logError("Length of array cannot be negative");
+        return nullptr;
+    }
+    auto arr_ty = type->codeGen();
+    if (!arr_ty)
+        return nullptr;
+    auto arr_ptr = builder.CreateAlloca(arr_ty, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), length));
+    auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
+    if (!st.insertArray(name, arr_ptr, min_const))
+        logError(name + " has already been defined");
+    return nullptr;
+}
+
+Ast::SPL_IR LabelAst::codeGen() const
+{
+    if (st.hasName(std::to_string(label)))
+    {
+        logError("Collision of name");
+        return nullptr;
+    }
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto labelbb = llvm::BasicBlock::Create(context, "labelbb", thefunc);
+    auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
+    builder.CreateBr(labelbb);
+    builder.SetInsertPoint(labelbb);
+    nonLabelAst->codeGen();
+    builder.CreateBr(afterbb);
+    thefunc->getBasicBlockList().push_back(afterbb);
+    builder.SetInsertPoint(afterbb);
+    return nullptr;
 }
 
 Ast::SPL_IR IfAst::codeGen() const
@@ -326,6 +513,43 @@ Ast::SPL_IR IfAst::codeGen() const
     builder.CreateBr(mergebb);
     thefunc->getBasicBlockList().push_back(mergebb);
     builder.SetInsertPoint(mergebb);
+    return nullptr;
+}
+
+Ast::SPL_IR CaseAst::codeGen() const
+{
+    auto thefunc = builder.GetInsertBlock()->getParent();
+    auto initbb = llvm::BasicBlock::Create(context, "initbb", thefunc);
+    builder.CreateBr(initbb);
+    builder.SetInsertPoint(initbb);
+    auto condv = cond->codeGen();
+    if (!condv)
+        return nullptr;
+    if (!condv->getType()->isIntegerTy())
+    {
+        logError("Case expression should be integer type");
+        return nullptr;
+    }
+    std::vector<llvm::BasicBlock*> entries;
+    for (int i = 0; i < caseStmt->size(); ++i)
+        entries.push_back(llvm::BasicBlock::Create(context, "case" + std::to_string(i)));
+    auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
+    builder.CreateBr(entries.size() == 0 ? afterbb : entries[0]);
+    for (int i = 0; i < entries.size(); ++i)
+    {
+        thefunc->getBasicBlockList().push_back(entries[i]);
+        builder.SetInsertPoint(entries[i]);
+        auto val = caseStmt->at(i).val->codeGen();
+        auto bodybb = llvm::BasicBlock::Create(context, "casebody" + std::to_string(i));
+        auto eqcond = builder.CreateICmpEQ(condv, val);
+        builder.CreateCondBr(eqcond, bodybb, i == entries.size() - 1 ? afterbb : entries[i + 1]);
+        thefunc->getBasicBlockList().push_back(bodybb);
+        builder.SetInsertPoint(bodybb);
+        caseStmt->at(i).stmt->codeGen();
+        builder.CreateBr(afterbb);
+    }
+    thefunc->getBasicBlockList().push_back(afterbb);
+    builder.SetInsertPoint(afterbb);
     return nullptr;
 }
 
@@ -417,6 +641,23 @@ Ast::SPL_IR RepeatAst::codeGen() const
     builder.CreateCondBr(condv, afterbb, bodybb);
     thefunc->getBasicBlockList().push_back(afterbb);
     builder.SetInsertPoint(afterbb);
+    return nullptr;
+}
+
+Ast::SPL_IR GotoAst::codeGen() const
+{
+    if (!st.hasName(std::to_string(label), false))
+    {
+        logError("Undefined label");
+        return nullptr;
+    }
+    auto gotobb = st.getLabelSymbol(std::to_string(label));
+    if (gotobb->getParent() != builder.GetInsertBlock()->getParent())
+    {
+        logError("Cannot goto another label in other function");
+        return nullptr;
+    }
+    builder.CreateBr(gotobb);
     return nullptr;
 }
 

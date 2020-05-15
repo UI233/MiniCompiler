@@ -8,19 +8,7 @@
 #include "SPL_common.h"
 
 namespace SPL {
-
-	union valueUnion {
-		char    valChar;
-		bool    valBool;
-		int     valInt;
-		double  valDouble;
-		std::string* valString;
-		valueUnion() {}
-		~valueUnion() {}
-	};
-
 	class Ast {
-
 	public:
 		using SPL_IR = llvm::Value*;
 		AST_NODE_TYPE nodeType;
@@ -59,6 +47,7 @@ namespace SPL {
 	public:
 		IndexAst();
 		~IndexAst();
+		virtual int genIndex() const = 0;
 	};
 
 	class MathAst final : public ExprAst {
@@ -75,7 +64,7 @@ namespace SPL {
 		~MathAst();
 	};
 
-	class ConstAst final : public ExprAst,public IndexAst {
+	class ConstAst final : public ExprAst, public IndexAst {
 	protected:
 		valueUnion value;
 	public:
@@ -84,6 +73,7 @@ namespace SPL {
 		ConstAst(double x);
 		ConstAst(bool x);
 		ConstAst(const std::string& x);
+		int genIndex() const override;
 		valueUnion getValue();
 		void __show(std::fstream& fout);
 		Ast::SPL_IR codeGen() const;
@@ -102,6 +92,7 @@ namespace SPL {
 		SymbolAst(const std::string& name);
 		~SymbolAst();
 		valueUnion getValue();
+		int genIndex() const override;
 		void __show(std::fstream& fout);
 		Ast::SPL_IR codeGen() const;
 		Ast::SPL_IR genPtr() const override;
@@ -158,7 +149,7 @@ namespace SPL {
 		~IfAst();
 	};
 
-	class CaseUnit {
+	struct CaseUnit {
 		std::unique_ptr<ExprAst> val;
 		std::unique_ptr<StmtAst> stmt;
 		inline CaseUnit(ExprAst* val_, StmtAst* stmt_) : val(val_), stmt(stmt_) {}
@@ -221,7 +212,7 @@ namespace SPL {
 	class GotoAst final : public StmtAst
 	{
 	protected:
-		std::string label;
+		int label;
 	public:
 		GotoAst(const std::string& label_);
 		~GotoAst();
@@ -284,7 +275,7 @@ namespace SPL {
 	};
 
 
-	class RecordDeclAst
+	class RecordDeclAst final : public Ast
 	{
 	private:
 		std::string name;
@@ -294,7 +285,7 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
-	class FuncDeclAst
+	class FuncDeclAst final : public Ast
 	{
 	private:
 		using arg_t = std::pair<std::unique_ptr<TypeAst>, std::string>;
@@ -308,17 +299,18 @@ namespace SPL {
 		llvm::Function* codeGen() const;
 	};
 
-	class ConstDeclAst {
+	class ConstDeclAst final : public Ast 
+	{
 	private:
 		std::string name;
 		SPL_TYPE type;
 		valueUnion const_value;
 	public:
 		ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_value_);
-		llvm::Function* codeGen() const;
+		llvm::Value* codeGen() const;
 	};
 
-	class SimpleVarDeclAst
+	class SimpleVarDeclAst final : public Ast
 	{
 	private:
 		std::string name;
@@ -328,7 +320,8 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
-	class TypeDeclAst {
+	class TypeDeclAst final : public Ast
+	{
 	private:
 		std::string name;
 		std::unique_ptr<TypeAst> type;
@@ -337,7 +330,8 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
-	class ArrayDeclAst {
+	class ArrayDeclAst final : public Ast
+	{
 	private:
 		std::string name;
 		std::unique_ptr<IndexAst> minIndex;
