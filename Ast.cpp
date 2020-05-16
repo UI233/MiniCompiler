@@ -383,6 +383,7 @@ void FuncDeclAst::__show(std::fstream& fout) {
 		else fout << "non-Var:"<<args[i].second;
 		args[i].first->__show(fout);
 	}
+	body->__show(fout);
 }
 
 FuncDeclAst::~FuncDeclAst() {
@@ -440,6 +441,20 @@ void ArrayDeclAst::__show(std::fstream& fout) {
 }
 
 ArrayDeclAst::~ArrayDeclAst() {
+	;
+}
+
+ReturnAst::ReturnAst(ExprAst* ret_) :
+	ret(ret_) {
+	this->nodeType = AST_RETURN;
+}
+
+void ReturnAst::__show(std::fstream& fout) {
+	fout << "RETURN:";
+	ret->__show(fout);
+}
+
+ReturnAst::~ReturnAst() {
 	;
 }
 
