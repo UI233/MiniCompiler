@@ -368,6 +368,16 @@ namespace SPL {
 		//llvm::Value* codeGen() const;
 	};
 
+	class ReturnAst final :public StmtAst {
+	private:
+		std::unique_ptr<ExprAst> ret;
+
+	public:
+		ReturnAst(ExprAst* ret_);
+		void __show(std::fstream& fout);
+		~ReturnAst();
+	};
+
 
 
 class SysFuncAst final:public FuncAst {
