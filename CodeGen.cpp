@@ -548,7 +548,7 @@ Ast::SPL_IR CaseAst::codeGen() const
         return nullptr;
     }
     std::vector<llvm::BasicBlock*> entries;
-    for (int i = 0; i < caseStmt->size(); ++i)
+    for (int i = 0; i < caseStmt.size(); ++i)
         entries.push_back(llvm::BasicBlock::Create(context, "case" + std::to_string(i)));
     auto afterbb = llvm::BasicBlock::Create(context, "afterbb");
     builder.CreateBr(entries.size() == 0 ? afterbb : entries[0]);
@@ -556,13 +556,13 @@ Ast::SPL_IR CaseAst::codeGen() const
     {
         thefunc->getBasicBlockList().push_back(entries[i]);
         builder.SetInsertPoint(entries[i]);
-        auto val = caseStmt->at(i).val->codeGen();
+        auto val = caseStmt[i]->val->codeGen();
         auto bodybb = llvm::BasicBlock::Create(context, "casebody" + std::to_string(i));
         auto eqcond = builder.CreateICmpEQ(condv, val);
         builder.CreateCondBr(eqcond, bodybb, i == entries.size() - 1 ? afterbb : entries[i + 1]);
         thefunc->getBasicBlockList().push_back(bodybb);
         builder.SetInsertPoint(bodybb);
-        caseStmt->at(i).stmt->codeGen();
+        caseStmt[i]->stmt->codeGen();
         builder.CreateBr(afterbb);
     }
     thefunc->getBasicBlockList().push_back(afterbb);
