@@ -11,6 +11,7 @@
 #include "llvm/IR/Verifier.h"
 #include "Ast.h"
 #include "SymbolTable.h"
+#include "SystemFunc.h"
 
 namespace SPL 
 {
@@ -229,13 +230,18 @@ Ast::SPL_IR DotAst::codeGen() const
 Ast::SPL_IR FuncAst::codeGen() const
 {
     auto func = st.getFuncSymbol(funcName);
+    if (funcName == "writeln" || funcName == "write")
+    {
+        func.second = std::vector<bool>(argList.size(), false);
+    }
     if (argList.size() != func.second.size())
     {
         logError("Wrong number of parameters passed");
         return nullptr;
     }
-    std::vector<llvm::Value*> argsv;
     int idx = 0;
+    std::vector<llvm::Value*> argsv;
+    std::vector<llvm::Type*> arg_raw_type;
     for (auto& arg: func.first->args())
     {
         bool is_var = func.second[idx++];
@@ -248,6 +254,8 @@ Ast::SPL_IR FuncAst::codeGen() const
                 return nullptr;
             }
             argsv.push_back(var_ptr->genPtr());
+            if (funcName == "read")
+                arg_raw_type.push_back(var_ptr->codeGen()->getType());
         }
         else
             argsv.push_back(argList[idx]->codeGen());
@@ -260,6 +268,13 @@ Ast::SPL_IR FuncAst::codeGen() const
         }
         ++idx;
     }
+    if (funcName == "writeln" || funcName == "write")
+    {
+        bool writeln = funcName == "writeln";
+        argsv = getWriteArgument(context, argsv, module, writeln);
+    }
+    else if (funcName == "read")
+        argsv = getReadArgument(context, argsv, arg_raw_type, module);
     return builder.CreateCall(func.first, argsv);
 }
 
@@ -386,6 +401,8 @@ llvm::Function* FuncDeclAst::codeGen() const
         auto ret_v = builder.CreateLoad(ret_ptr);
         builder.CreateRet(ret_v);
     }
+    else
+        builder.CreateRetVoid();
     // remove local variable from symbol table
     st.popScope();
     return func;
@@ -646,6 +663,7 @@ Ast::SPL_IR RepeatAst::codeGen() const
 
 Ast::SPL_IR GotoAst::codeGen() const
 {
+    
     if (!st.hasName(std::to_string(label), false))
     {
         logError("Undefined label");
