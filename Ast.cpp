@@ -4,7 +4,7 @@ using namespace SPL;
 
 LabelAst::LabelAst(int label_, Ast* nonLabelAst_) :
 	label(label_), nonLabelAst(nonLabelAst_) {
-	this->nodeType = AST_LABEL;
+	//this->nodeType = AST_LABEL;
 }
 
 void LabelAst::__show(std::fstream& fout) {
@@ -42,7 +42,7 @@ StmtAst::~StmtAst() {
 
 MathAst::MathAst(SPL_OP op_, ExprAst* left , ExprAst* right) :
 	op(op_), lchild(left), rchild(right) {
-	this->nodeType = AST_MATH;
+	//this->nodeType = AST_MATH;
 }
 
 void MathAst::__show(std::fstream& fout) {
@@ -60,27 +60,27 @@ MathAst::~MathAst() {
 ConstAst::ConstAst(char x) :
 	type(CHAR) {
 	value.valChar = x;
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
 ConstAst::ConstAst(int x) :
 	type(INT) {
 	value.valInt = x;
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
 ConstAst::ConstAst(double x):
 	type(REAL) {
 	value.valDouble = x;
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
 ConstAst::ConstAst(bool x) :
 	type(BOOL) {
 	value.valBool = x;
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
-ConstAst::ConstAst(std::string x) :
+ConstAst::ConstAst(std::string& x) :
 	type(STRING) {
 	value.valString = &x;
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
 
 void ConstAst::__show(std::fstream& fout) {
@@ -100,7 +100,7 @@ ConstAst::~ConstAst() {
 
 SymbolAst::SymbolAst(const std::string& name_) :
 	name(name_) {
-	this->nodeType = AST_SYMBOL;
+	//this->nodeType = AST_SYMBOL;
 }
 
 void SymbolAst::__show(std::fstream& fout) {
@@ -113,7 +113,7 @@ SymbolAst::~SymbolAst() {
 
 ArrayAst::ArrayAst(SymbolAst* sym_, ExprAst* exp_) :
 	sym(sym_), exp_index(exp_) {
-	this->nodeType = AST_ARRAY;
+	//this->nodeType = AST_ARRAY;
 }
 
 void ArrayAst::__show(std::fstream& fout) {
@@ -130,7 +130,7 @@ ArrayAst::~ArrayAst() {
 
 AssignAst::AssignAst(VarAst* lhs_, ExprAst* rhs_) :
 	lhs(lhs_), rhs(rhs_) {
-	this->StmtAst::nodeType = this->ExprAst::nodeType = AST_ASSIGN;
+	//this->StmtAst::nodeType = this->ExprAst::nodeType = AST_ASSIGN;
 
 }
 
@@ -149,7 +149,7 @@ AssignAst::~AssignAst() {
 
 IfAst::IfAst(ExprAst* cond_, StmtAst* doIf_, StmtAst* doElse_) :
 	cond(cond_),ifStmt(doIf_),elseStmt(doElse_) {
-	this->nodeType = AST_IF;
+	//this->nodeType = AST_IF;
 }
 
 void IfAst::__show(std::fstream& fout) {
@@ -172,7 +172,7 @@ IfAst::~IfAst() {
 
 CaseAst::CaseAst(ExprAst* cond_, std::vector<CaseUnit*> caseStmt_):
 	cond(cond_) {
-	this->nodeType = AST_CASE;
+	//this->nodeType = AST_CASE;
 	for (auto it:caseStmt_) {
 		caseStmt.push_back(it);
 	}
@@ -181,7 +181,7 @@ CaseAst::CaseAst(ExprAst* cond_, std::vector<CaseUnit*> caseStmt_):
 void CaseAst::__show(std::fstream& fout) {
 	fout << "CASE AST:" << std::endl;
 	for (auto it : caseStmt) {
-		fout << "CASE:" << it->val << std::endl;
+		// fout << "CASE:" << it->val << std::endl;
 		it->stmt->__show(fout);
 	}
 }
@@ -192,7 +192,7 @@ CaseAst::~CaseAst() {
 
 WhileAst::WhileAst(ExprAst* cond_, StmtAst* stmt_) :
 	cond(cond_), stmt(stmt_) {
-	this->nodeType = AST_WHILE;
+	//this->nodeType = AST_WHILE;
 }
 
 void WhileAst::__show(std::fstream& fout) {
@@ -207,13 +207,11 @@ WhileAst::~WhileAst() {
 	;
 }
 
-RepeatAst::RepeatAst(std::vector<StmtAst*>& stmtList_, ExprAst* exp_) :
+RepeatAst::RepeatAst(const std::vector<StmtAst*>& stmtList_, ExprAst* exp_) :
 	exp(exp_) {
-	this->nodeType = AST_REPEAT;
-	for (auto it : stmtList_) {
-		std::unique_ptr<StmtAst> t(it);
-		stmtList.push_back(std::move(t));
-	}
+	//this->nodeType = AST_REPEAT;
+	for (auto it : stmtList_) 
+		stmtList.push_back(std::unique_ptr<StmtAst>(it));
 }
 
 void RepeatAst::__show(std::fstream& fout) {
@@ -232,7 +230,7 @@ RepeatAst::~RepeatAst() {
 
 ForAst::ForAst(SymbolAst* id_, ExprAst* init_, bool dir_, ExprAst* fin_, StmtAst* stmt_) :
 	loop_var(id_), init(init_), dir_init_to_end(dir_), end(fin_), stmt(stmt_) {
-	this->nodeType = AST_FOR;
+	//this->nodeType = AST_FOR;
 }
 
 void ForAst::__show(std::fstream& fout) {
@@ -254,7 +252,7 @@ ForAst::~ForAst() {
 
 GotoAst::GotoAst(int label_) :
 	label(label_) {
-	this->nodeType = AST_GOTO;
+	//this->nodeType = AST_GOTO;
 }
 
 int GotoAst::getlabel() {
@@ -270,7 +268,7 @@ GotoAst::~GotoAst() {
 }
 
 CompoundAst::CompoundAst(const std::vector<StmtAst*>& stmtList_) {
-	this->nodeType = AST_COMPOUND;
+	//this->nodeType = AST_COMPOUND;
 	for (auto it : stmtList_) {
 		std::unique_ptr<StmtAst> t(it);
 		stmtList.push_back(std::move(t));
@@ -291,7 +289,7 @@ CompoundAst::~CompoundAst() {
 
 FuncAst::FuncAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*> argList_) :
 	isProc(isProc_), funcName(funcName_) {
-	this->StmtAst::nodeType = this->ExprAst::nodeType = AST_FUNC;
+	//this->StmtAst::nodeType = this->ExprAst::nodeType = AST_FUNC;
 	for (auto it : argList_) {
 		std::unique_ptr<ExprAst> t(it);
 		argList.push_back(std::move(t));
@@ -317,7 +315,7 @@ FuncAst::~FuncAst() {
 
 TypeAst::TypeAst(const std::string& t_name, bool isArray_, TypeAst* ArrayMemType_, int arrayLen_) :
 	name(t_name), isArray(isArray_), ArrayMemType(ArrayMemType_), arrayLen(arrayLen_) {
-	this->nodeType = AST_TYPE;
+	//this->nodeType = AST_TYPE;
 }
 
 void TypeAst::__show(std::fstream& fout) {
@@ -334,7 +332,7 @@ TypeAst::~TypeAst() {
 
 DotAst::DotAst(SymbolAst* record_, std::string& field_) :
 	record(record_), field(field_) {
-	this->nodeType = AST_DOT;
+	//this->nodeType = AST_DOT;
 }
 
 void DotAst::__show(std::fstream& fout) {
@@ -349,7 +347,7 @@ DotAst::~DotAst() {
 
 RecordDeclAst::RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members) :
 	name(t_name) {
-	this->nodeType = AST_RECORD_DECL;
+	//this->nodeType = AST_RECORD_DECL;
 	for (auto it : t_members) {
 		std::unique_ptr<TypeAst> t(it.first);
 		members.push_back(std::pair<std::unique_ptr<TypeAst>, std::string>(std::move(t), it.second));
@@ -366,9 +364,9 @@ void RecordDeclAst::__show(std::fstream& fout) {
 
 RecordDeclAst::~RecordDeclAst() { ; }
 
-FuncDeclAst::FuncDeclAst(std::string& funcName_, CompoundAst* body_, const std::vector<std::pair<TypeAst*, std::string>>& args_, const std::vector<bool>& is_var_, TypeAst* ret_type_) :
+FuncDeclAst::FuncDeclAst(const std::string& funcName_, CompoundAst* body_, const std::vector<std::pair<TypeAst*, std::string>>& args_, const std::vector<bool>& is_var_, TypeAst* ret_type_) :
 	name(funcName_), body(body_), is_var(is_var_), ret_type(ret_type_) {
-	this->nodeType = AST_FUNC_DECL;
+	//this->nodeType = AST_FUNC_DECL;
 	for (auto it : args_) {
 		std::unique_ptr<TypeAst> t(it.first);
 		args.push_back(arg_t(std::move(t), it.second));
@@ -392,7 +390,7 @@ FuncDeclAst::~FuncDeclAst() {
 
 ConstDeclAst::ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_value_):
 	name(name_), type(type_), const_value(const_value_){
-	this->nodeType = AST_CONST_DECL;
+	//this->nodeType = AST_CONST_DECL;
 }
 
 void ConstDeclAst::__show(std::fstream& fout) {
@@ -405,7 +403,7 @@ ConstDeclAst::~ConstDeclAst() {
 
 SimpleVarDeclAst::SimpleVarDeclAst(std::string& name_, TypeAst* type_) :
 	name(name_), type(type_){
-	this->nodeType = AST_SIMPLE_VAR_DECL;
+	//this->nodeType = AST_SIMPLE_VAR_DECL;
 }
 
 void SimpleVarDeclAst::__show(std::fstream& fout) {
@@ -418,7 +416,7 @@ SimpleVarDeclAst::~SimpleVarDeclAst() { ; }
 
 TypeDeclAst::TypeDeclAst(std::string& name_, TypeAst* type_):
 	name(name_),type(type_){
-	this->nodeType = AST_TYPE_DECL;
+	//this->nodeType = AST_TYPE_DECL;
 }
 
 void TypeDeclAst::__show(std::fstream& fout) {
@@ -431,11 +429,11 @@ TypeDeclAst::~TypeDeclAst() { ; }
 
 ArrayDeclAst::ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type_) :
 	name(name_), minIndex(minIndex_), maxIndex(maxIndex_), type(type_) {
-	this->nodeType = AST_ARRAY_DECL;
+	//this->nodeType = AST_ARRAY_DECL;
 }
 
 void ArrayDeclAst::__show(std::fstream& fout) {
-	fout << "Array Decl Ast-name:" << name << "\t minIndex:" << minIndex << "\t maxIndex:" << maxIndex << std::endl;
+	// fout << "Array Decl Ast-name:" << name << "\t minIndex:" << minIndex << "\t maxIndex:" << maxIndex << std::endl;
 	fout << "Array Decl Ast-type:";
 	type->__show(fout);
 }
@@ -444,23 +442,9 @@ ArrayDeclAst::~ArrayDeclAst() {
 	;
 }
 
-ReturnAst::ReturnAst(ExprAst* ret_) :
-	ret(ret_) {
-	this->nodeType = AST_RETURN;
-}
-
-void ReturnAst::__show(std::fstream& fout) {
-	fout << "RETURN:";
-	ret->__show(fout);
-}
-
-ReturnAst::~ReturnAst() {
-	;
-}
-
 SysFuncAst::SysFuncAst(SYS_FUNC_ID sysFuncId_, std::vector<ExprAst*>& argList_) :
 	id(sysFuncId_) {
-	this->FuncAst::ExprAst::nodeType = this->FuncAst::StmtAst::nodeType = AST_SYSFUNC;
+	//this->FuncAst::ExprAst::nodeType = this->FuncAst::StmtAst::nodeType = AST_SYSFUNC;
 	for (auto it : argList_) {
 		std::unique_ptr<ExprAst> t(it);
 		argList.push_back(std::move(t));

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include "SPL_common.h"
+#include <llvm/IR/Value.h>
 
 namespace SPL {
 	class Ast {
@@ -28,7 +29,6 @@ namespace SPL {
 		LabelAst(int label_, Ast* nonLabelAst_);
 		Ast::SPL_IR codeGen() const;
 		void __show(std::fstream& fout);
-		//Ast::SPL_IR codeGen() const;
 		~LabelAst();
 	};
 	
@@ -75,9 +75,9 @@ namespace SPL {
 		ConstAst(int x);
 		ConstAst(double x);
 		ConstAst(bool x);
-		ConstAst(const std::string& x);
+		ConstAst(std::string& x);
 		int genIndex() const override;
-		valueUnion getValue();
+		// valueUnion getValue();
 		void __show(std::fstream& fout);
 		Ast::SPL_IR codeGen() const;
 		~ConstAst();
@@ -85,7 +85,7 @@ namespace SPL {
 	
 	class VarAst : public ExprAst{
     public:
-		//virtual Ast::SPL_IR genPtr() const = 0;
+		virtual Ast::SPL_IR genPtr() const = 0;
 	};
 
 	class VarAst : public ExprAst{
@@ -122,19 +122,17 @@ namespace SPL {
 		Ast::SPL_IR genPtr() const override;
 	};
 
-	class AssignAst final :public ExprAst {
+	class AssignAst final :public StmtAst {
 	protected:
 		std::unique_ptr<VarAst> lhs;
 		std::unique_ptr<ExprAst> rhs;
 	public:
-		AssignAst(ExprAst* lhs_, ExprAst* rhs_);
+		AssignAst(VarAst* lhs_, ExprAst* rhs_);
 		~AssignAst();
 		valueUnion getValue();
 		void __show(std::fstream& fout);
 		Ast::SPL_IR codeGen() const;
 	};
-
-	
 	
 	class StmtAst :public Ast
 		// StmtAst is Ast those has not value.
@@ -201,8 +199,8 @@ namespace SPL {
 	public:
 		RepeatAst(const std::vector<StmtAst*>& stmtList_, ExprAst* exp_);
 		~RepeatAst();
-		valueUnion getValue(std::fstream& fout);
-		void __show();
+		// valueUnion getValue(std::fstream& fout);
+		void __show(std::fstream& fout);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -217,8 +215,8 @@ namespace SPL {
 	public:
 		ForAst(SymbolAst* id_, ExprAst* init, bool dir_, ExprAst* fin_, StmtAst* stmt_);
 		~ForAst();
-		valueUnion getValue(std::fstream& fout);
-		void __show();
+		// valueUnion getValue(std::fstream& fout);
+		void __show(std::fstream& fout) override;
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -227,7 +225,7 @@ namespace SPL {
 	protected:
 		int label;
 	public:
-		GotoAst(const std::string& label_);
+		GotoAst(int label_);
 		~GotoAst();
 		int getlabel();
 		//valueUnion getValue();
@@ -303,7 +301,7 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
-	class FuncDeclAst final :public StmtAst
+	class FuncDeclAst final : public StmtAst
 	{
 	private:
 		using arg_t = std::pair<std::unique_ptr<TypeAst>, std::string>;
@@ -313,32 +311,36 @@ namespace SPL {
 		std::vector<bool> is_var;
 		std::unique_ptr<TypeAst> ret_type;
 	public:
-		FuncDeclAst(bool isProc_, std::string& funcName_, const std::vector<arg_t>& args_, const std::vector<bool>& _is_var);
-		llvm::Function* codeGen() const;
+		FuncDeclAst(const std::string& funcName_, CompoundAst* body_, const std::vector<std::pair<TypeAst*, std::string>>& args_, const std::vector<bool>& _is_var, TypeAst* ret_type_);
+		void __show(std::fstream& fout);
+		llvm::Value* codeGen() const;
 	};
 
-	class ConstDeclAst final : public Ast 
+	class ConstDeclAst final : public StmtAst 
 	{
 	private:
 		std::string name;
 		SPL_TYPE type;
 		valueUnion const_value;
 	public:
+		void __show(std::fstream& fout);
 		ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_value_);
-		llvm::Value* codeGen() const;
+		~ConstDeclAst();
+		llvm::Value* codeGen() const override;
 	};
 
-	class SimpleVarDeclAst final : public Ast
+	class SimpleVarDeclAst final : public StmtAst
 	{
 	private:
 		std::string name;
 		std::unique_ptr<TypeAst> type;
 	public:
 		SimpleVarDeclAst(std::string& name_, TypeAst* type_);
+		void __show(std::fstream& fout);
 		llvm::Value* codeGen() const;
 	};
 
-	class TypeDeclAst final : public Ast
+	class TypeDeclAst final : public StmtAst
 	{
 	private:
 		std::string name;
@@ -347,7 +349,7 @@ namespace SPL {
 		TypeDeclAst(std::string& name_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~TypeDeclAst();
-		//llvm::Value* codeGen() const;
+		llvm::Value* codeGen() const;
 	};
 
 	class ArrayDeclAst final: public StmtAst{
@@ -357,6 +359,7 @@ namespace SPL {
 		std::unique_ptr<IndexAst> maxIndex;
 		std::unique_ptr<TypeAst> type;
 	public:
+		void __show(std::fstream& fout);
 		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type);
 		llvm::Value* codeGen() const;
 	};

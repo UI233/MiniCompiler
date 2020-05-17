@@ -332,7 +332,7 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
     return nullptr;
 }
 
-llvm::Function* FuncDeclAst::codeGen() const
+llvm::Value* FuncDeclAst::codeGen() const
 {
     if (st.hasName(name))
     {
@@ -405,7 +405,7 @@ llvm::Function* FuncDeclAst::codeGen() const
         builder.CreateRetVoid();
     // remove local variable from symbol table
     st.popScope();
-    return func;
+    return nullptr;
 }
 
 Ast::SPL_IR RecordDeclAst::codeGen() const
