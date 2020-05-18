@@ -1,0 +1,30 @@
+const
+a = 1; b = 3.5; C = false; abc = maxint; k = 100;
+type
+short = integer; double = real; a1t10 = 1..10; a_10t10 = -10..10; aatk = a..k; 
+ar1 = array [1..10] of integer;
+ar2 = array [1..10] of array[1..20] of integer;
+ar3 = array [-3..3] of array[1..10] of short;
+var
+aa,bb:integer;
+bb:array [1..100] of integer;
+
+
+function sum  ( ; a : integer ) :
+ integer ;
+	const C = 1;
+	type short = integer;
+	var i:integer;
+	begin
+		sum := 3;
+	end;
+
+begin
+
+	aa := 3*5+a+1;
+	aa := 5>=2*aa;
+	case aa of 
+	1: aa:=1;
+	2: aa:=2;
+	end;
+end
