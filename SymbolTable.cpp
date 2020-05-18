@@ -9,6 +9,8 @@ int SymbolTable::getSymbolType(const std::string& name, bool current_scope) cons
             symbol_type |= FUNCTION;
         if(tables.back().named_variable.count(name))
             symbol_type |= VAR;
+        if(tables.back().named_type.count(name))
+            symbol_type |= TYPE;
         if(tables.back().named_record.count(name))
             symbol_type |= RECORD;
         if (tables.back().named_label.count(name))
@@ -26,6 +28,8 @@ int SymbolTable::getSymbolType(const std::string& name, bool current_scope) cons
                 symbol_type |= FUNCTION;
             if(tables[i].named_variable.count(name))
                 symbol_type |= VAR;
+            if(tables[i].named_type.count(name))
+                symbol_type |= TYPE;
             if(tables[i].named_record.count(name))
                 symbol_type |= RECORD;
             if (tables[i].named_label.count(name))
@@ -112,6 +116,17 @@ SymbolTable::NamedConstant SymbolTable::getConstant(const std::string& name) con
     return std::make_pair(nullptr, valueUnion());
 }
 
+SymbolTable::NamedType SymbolTable::getType(const std::string& name) const
+{
+    if (getSymbolType(name, false) | TYPE)
+    {
+        for (int i = tables.size() - 1; i >= 0; --i)
+            if (tables[i].named_type.count(name)) 
+                return tables[i].named_type.find(name)->second;
+    }
+    return nullptr;
+}
+
 bool SymbolTable::insertVar(const std::string& name, llvm::Value* ptr)
 {
     if (hasName(name))
@@ -133,6 +148,7 @@ bool SymbolTable::insertRecord(const std::string& name, llvm::StructType* ty, co
         member_map.second.insert(std::make_pair(member_name[i], i));
     }
     tables.back().named_record.insert(std::make_pair(name, member_map));
+    tables.back().named_type.insert(std::make_pair(name, ty));
     return true;
 }
 
@@ -166,6 +182,14 @@ bool SymbolTable::insertArray(const std::string& name, llvm::Value* arr, llvm::C
         return false;
     tables.back().named_array.insert(std::make_pair(name, offset));
     tables.back().named_variable.insert(std::make_pair(name, arr));
+    return true;
+}
+
+bool SymbolTable::insertType(const std::string& name, const NamedType& type) 
+{
+    if (hasName(name, false))
+        return false;
+    tables.back().named_type.insert(std::make_pair(name, type));
     return true;
 }
 

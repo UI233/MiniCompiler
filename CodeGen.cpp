@@ -301,9 +301,9 @@ Ast::SPL_IR AssignAst::codeGen() const
 
 llvm::Type* TypeAst::codeGen() const
 {
-    auto struct_type = module.getTypeByName(name);
-    if (struct_type)
-        return struct_type;
+    auto struct_type = st.getType(name);
+    if (struct_type.type)
+        return struct_type.type;
     if (name == "boolean")
         return llvm::Type::getInt1Ty(context);
     if (name == "integer")
@@ -328,7 +328,13 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
     }
 
     auto var = builder.CreateAlloca(var_t);
-    st.insertVar(name, var);
+    auto type_record = st.getType(type->getName());
+    if (type_record.is_array) {
+        auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_record.min_index);
+        st.insertArray(name, var, min_const);
+    }
+    else
+        st.insertVar(name, var);
     return nullptr;
 }
 
@@ -370,14 +376,19 @@ llvm::Value* FuncDeclAst::codeGen() const
     st.pushScope();
     auto entrybb = llvm::BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(entrybb);
-    std::vector<std::string> local_var;
     idx = 0;
     for (auto& arg: func->args())
     {
-        local_var.push_back(arg.getName());
-        if (is_var[idx++])
+        bool is_array = st.getType(args[idx].first->getName()).is_array;
+        if (is_var[idx])
         {
-            st.insertVar(arg.getName(), &arg);
+            if (is_array) {
+                auto min_value = st.getType(args[idx].first->getName()).min_index;
+                auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
+                st.insertArray(arg.getName(), &arg, min_const);
+            }
+            else
+                st.insertVar(arg.getName(), &arg);
         }
         else 
         {
@@ -385,14 +396,13 @@ llvm::Value* FuncDeclAst::codeGen() const
             builder.CreateStore(tmp_ptr, &arg);
             st.insertVar(arg.getName(), tmp_ptr);
         }
-        local_var.push_back(arg.getName());
+        ++idx;
     }
     llvm::Value* ret_ptr = nullptr;
     if (!ret_ty->isVoidTy())
     {
         ret_ptr = builder.CreateAlloca(ret_ty);
         st.insertVar("0" + name, ret_ptr);
-        local_var.push_back("0" + name);
     }
     // generate body of function
     body->codeGen();
@@ -410,6 +420,16 @@ llvm::Value* FuncDeclAst::codeGen() const
 
 Ast::SPL_IR RecordDeclAst::codeGen() const
 {
+    auto type = genType();
+    std::vector<std::string> member_name;
+    for (auto& member: members)
+        member_name.push_back(member.second);
+    st.insertRecord(name, type, member_name);
+    return nullptr;
+}
+
+llvm::StructType* RecordDeclAst::genType() const
+{
     if (st.hasName(name))
     {
         logError("Collision of name");
@@ -425,8 +445,7 @@ Ast::SPL_IR RecordDeclAst::codeGen() const
             return nullptr;
         }
     }
-    llvm::StructType::get(context, member_ty);
-    return nullptr;
+    return llvm::StructType::create(context, member_ty);
 }
 
 Ast::SPL_IR ConstDeclAst::codeGen() const
@@ -484,6 +503,14 @@ Ast::SPL_IR ArrayDeclAst::codeGen() const
     if (!st.insertArray(name, arr_ptr, min_const))
         logError(name + " has already been defined");
     return nullptr;
+}
+
+llvm::Type* ArrayDeclAst::genType() const
+{
+    int min_value = minIndex->genIndex();
+    int max_value = maxIndex->genIndex();
+    int length = max_value - min_value + 1;
+    return llvm::ArrayType::get(type->codeGen(), length);
 }
 
 Ast::SPL_IR LabelAst::codeGen() const
@@ -676,6 +703,32 @@ Ast::SPL_IR GotoAst::codeGen() const
         return nullptr;
     }
     builder.CreateBr(gotobb);
+    return nullptr;
+}
+
+llvm::Value* TypeDeclAst::codeGen() const
+{
+    if (st.hasName(name))
+    {
+        logError("Type has been defined");
+        return nullptr;
+    }
+    if (simple_t.get())
+    {
+        if (simple_t->codeGen()) {
+            st.insertType(name, st.getType(simple_t->getName()));
+        }
+        return nullptr;
+    }
+    else if (arr_t.get())
+    {
+        auto array_type = arr_t->genType();
+        st.insertType(name, SymbolTable::NamedType(array_type, arr_t->getIndex()));
+    }
+    else {
+        auto struct_t = record_t->genType();
+        st.insertType(name, SymbolTable::NamedType(struct_t));
+    }
     return nullptr;
 }
 

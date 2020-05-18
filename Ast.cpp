@@ -313,17 +313,13 @@ FuncAst::~FuncAst() {
 	;
 }
 
-TypeAst::TypeAst(const std::string& t_name, bool isArray_, TypeAst* ArrayMemType_, int arrayLen_) :
-	name(t_name), isArray(isArray_), ArrayMemType(ArrayMemType_), arrayLen(arrayLen_) {
+TypeAst::TypeAst(const std::string& t_name) :
+	name(t_name){
 	//this->nodeType = AST_TYPE;
 }
 
 void TypeAst::__show(std::fstream& fout) {
-	fout << "Type AST-name:" << name << std::endl;
-	if (isArray) {
-		fout << "Is Array Of:" << arrayLen << std::endl;
-		ArrayMemType->__show(fout);
-	}
+	// fout << "Type AST-name:" << name << std::endl;
 }
 
 TypeAst::~TypeAst() {
@@ -415,14 +411,24 @@ void SimpleVarDeclAst::__show(std::fstream& fout) {
 SimpleVarDeclAst::~SimpleVarDeclAst() { ; }
 
 TypeDeclAst::TypeDeclAst(std::string& name_, TypeAst* type_):
-	name(name_),type(type_){
+	name(name_),simple_t(type_){
+	//this->nodeType = AST_TYPE_DECL;
+}
+
+TypeDeclAst::TypeDeclAst(std::string& name_, RecordDeclAst* type_):
+	name(name_), record_t(type_){
+	//this->nodeType = AST_TYPE_DECL;
+}
+
+TypeDeclAst::TypeDeclAst(std::string& name_, ArrayDeclAst* type_):
+	name(name_), arr_t(type_){
 	//this->nodeType = AST_TYPE_DECL;
 }
 
 void TypeDeclAst::__show(std::fstream& fout) {
 	fout << "Type Decl Ast-name:" << name << std::endl;
 	fout << "Type Decl Ast-type:";
-	type->__show(fout);
+	// type->__show(fout);
 }
 
 TypeDeclAst::~TypeDeclAst() { ; }

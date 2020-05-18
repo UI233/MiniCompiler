@@ -6,6 +6,7 @@
 #include <fstream>
 #include "SPL_common.h"
 #include <llvm/IR/Value.h>
+#include <llvm/IR/DerivedTypes.h>
 
 namespace SPL {
 	class Ast {
@@ -264,12 +265,10 @@ namespace SPL {
 	{
 	private:
 		std::string name;
-		bool isArray;
-		std::unique_ptr<TypeAst> ArrayMemType;
-		int arrayLen;
 	public:
-		TypeAst(const std::string& t_name, bool isArray_=false, TypeAst* ArrayMemType_=nullptr, int arrayLen_=0);
+		TypeAst(const std::string& t_name);
 		void __show(std::fstream& fout);
+		inline std::string getName() const {return name;}
 		~TypeAst();
 		llvm::Type* codeGen() const;
 	};
@@ -289,7 +288,7 @@ namespace SPL {
 	};
 
 
-	class RecordDeclAst final : public Ast
+	class RecordDeclAst : public StmtAst
 	{
 	private:
 		std::string name;
@@ -298,7 +297,8 @@ namespace SPL {
 		RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members);
 		void __show(std::fstream& fout);
 		~RecordDeclAst();
-		llvm::Value* codeGen() const;
+		SPL_IR codeGen() const;
+		llvm::StructType* genType() const;
 	};
 
 	class FuncDeclAst final : public StmtAst
@@ -340,18 +340,6 @@ namespace SPL {
 		llvm::Value* codeGen() const;
 	};
 
-	class TypeDeclAst final : public StmtAst
-	{
-	private:
-		std::string name;
-		std::unique_ptr<TypeAst> type;
-	public:
-		TypeDeclAst(std::string& name_, TypeAst* type_);
-		void __show(std::fstream& fout);
-		~TypeDeclAst();
-		llvm::Value* codeGen() const;
-	};
-
 	class ArrayDeclAst final: public StmtAst{
 	private:
 		std::string name;
@@ -361,8 +349,27 @@ namespace SPL {
 	public:
 		void __show(std::fstream& fout);
 		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type);
+		inline int getIndex() const {return minIndex->genIndex();}
+		llvm::Value* codeGen() const;
+		llvm::Type* genType() const;
+	};
+
+	class TypeDeclAst final : public StmtAst
+	{
+	private:
+		std::string name;
+		std::unique_ptr<TypeAst> simple_t;
+		std::unique_ptr<ArrayDeclAst> arr_t;
+		std::unique_ptr<RecordDeclAst> record_t;
+	public:
+		TypeDeclAst(std::string& name_, TypeAst* type_);
+		TypeDeclAst(std::string& name_, ArrayDeclAst* type_);
+		TypeDeclAst(std::string& name_, RecordDeclAst* type_);
+		void __show(std::fstream& fout);
+		~TypeDeclAst();
 		llvm::Value* codeGen() const;
 	};
+
 
 
 
