@@ -1,0 +1,130 @@
+Compound Ast:
+Const Decl Ast-name:STU_MAX	 type:3
+Type Decl Ast-name:student
+Type Decl Ast-type:Record Type Ast-members:
+members-0: 
+Name:s_id
+Type:Simple Type Ast-name:
+integer
+members-1: 
+Name:score
+Type:Simple Type Ast-name:
+real
+Record Type Ast-end.
+Simple var Decl Ast-name:a
+Simple var Decl Ast-name:b
+Simple var Decl Ast-name:i
+Simple var Decl Ast-name:sumval
+Simple var Decl Ast-type:Simple Type Ast-name:
+integer
+Simple var Decl Ast-name:student_book
+Simple var Decl Ast-type:Array Type Ast-Type:
+Simple Type Ast-name:
+student
+Array Type Ast-minIndex:
+Const Ast:INT:0
+Array Type Ast-maxIndex:
+Const Ast:INT:100
+Func Decl Ast-name:sum
+Para:
+non-Var:aSimple Type Ast-name:
+integer
+non-Var:bSimple Type Ast-name:
+integer
+Compound Ast:
+Simple var Decl Ast-name:i
+Simple var Decl Ast-type:Simple Type Ast-name:
+integer
+AssignAst:
+LhsVarAst:SymbolAst:i
+RhsExprAst:Const Ast:INT:0
+AssignAst:
+LhsVarAst:SymbolAst:sum
+RhsExprAst:Const Ast:INT:0
+For AST-loopvar:
+SymbolAst:i
+For AST_INIT:
+SymbolAst:a
+For AST_END:
+SymbolAst:b
+For-DIR:1
+For-stmt:
+Compound Ast:
+AssignAst:
+LhsVarAst:SymbolAst:sum
+RhsExprAst:MathAst: 
+Operator:1
+Left:SymbolAst:sum
+
+Right:SymbolAst:i
+
+Compound Ast END
+For END
+Compound Ast END
+Func Decl Ast-name:add
+Para:
+non-Var:aSimple Type Ast-name:
+integer
+non-Var:bSimple Type Ast-name:
+integer
+Compound Ast:
+AssignAst:
+LhsVarAst:SymbolAst:add
+RhsExprAst:MathAst: 
+Operator:1
+Left:SymbolAst:a
+
+Right:SymbolAst:b
+
+Compound Ast END
+Func Decl Ast-name:inc
+Para:
+Var:aSimple Type Ast-name:
+integer
+Compound Ast:
+AssignAst:
+LhsVarAst:SymbolAst:a
+RhsExprAst:MathAst: 
+Operator:1
+Left:SymbolAst:a
+
+Right:Const Ast:INT:1
+
+Compound Ast END
+AssignAst:
+LhsVarAst:SymbolAst:i
+RhsExprAst:Const Ast:INT:0
+AssignAst:
+LhsVarAst:SymbolAst:a
+RhsExprAst:Const Ast:INT:0
+AssignAst:
+LhsVarAst:SymbolAst:b
+RhsExprAst:SymbolAst:STU_MAX
+AssignAst:
+LhsVarAst:SymbolAst:sumval
+RhsExprAst:FUNC-AST:NAME:sum
+ARG:
+SymbolAst:a
+ARG:
+SymbolAst:b
+IfAst:
+condAst:MathAst: 
+Operator:10
+Left:SymbolAst:sumval
+
+Right:Const Ast:INT:0
+
+doIfAst:IfAst:
+condAst:MathAst: 
+Operator:13
+Left:SymbolAst:sumval
+
+Right:Const Ast:INT:5
+
+doIfAst:AssignAst:
+LhsVarAst:SymbolAst:i
+RhsExprAst:Const Ast:INT:1
+ElseAst:AssignAst:
+LhsVarAst:SymbolAst:i
+RhsExprAst:Const Ast:INT:0
+Compound Ast END

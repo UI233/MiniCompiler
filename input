@@ -1,30 +1,46 @@
 const
-a = 1; b = 3.5; C = false; abc = maxint; k = 100;
+	STU_MAX = 100;
 type
-short = integer; double = real; a1t10 = 1..10; a_10t10 = -10..10; aatk = a..k; 
-ar1 = array [1..10] of integer;
-ar2 = array [1..10] of array[1..20] of integer;
-ar3 = array [-3..3] of array[1..10] of short;
+	student = record 
+		s_id:integer;
+		score:real;
+	end;
 var
-aa,bb:integer;
-bb:array [1..100] of integer;
+	a,b,i,sumval : integer;
+	student_book : array [0..100] of student;
 
-
-function sum  ( ; a : integer ) :
- integer ;
-	const C = 1;
-	type short = integer;
-	var i:integer;
+function sum ( a : integer ; b : integer ) :  integer;
+	
+	var
+		i:integer;
 	begin
-		sum := 3;
+		i:=0;
+		sum:=0;
+		for i:= a to b do
+		begin
+			sum:=sum+i;
+		end;
+	end;
+
+function add ( a : integer ; b : integer ) :  integer;
+	
+	begin
+		add := a+b;
+	end;
+
+procedure inc ( var a : integer );
+	begin
+		a := a+1;
 	end;
 
 begin
-
-	aa := 3*5+a+1;
-	aa := 5>=2*aa;
-	case aa of 
-	1: aa:=1;
-	2: aa:=2;
-	end;
+	i := 0;
+	a := 0;
+	b := STU_MAX;
+	sumval := sum(a,b);
+	if sumval>=0 then
+		if sumval<5 then
+			i:=1
+		else
+			i:=0;
 end

@@ -3,20 +3,12 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <memory>
 #include <fstream>
 #include "SPL_common.h"
 
 namespace SPL {
 
-	union valueUnion {
-		char    valChar;
-		bool    valBool;
-		int     valInt;
-		double  valDouble;
-		std::string* valString;
-		valueUnion() {}
-		~valueUnion() {}
-	};
 
 	class Ast {
 
@@ -31,18 +23,9 @@ namespace SPL {
 		virtual ~Ast() = 0;
 		//virtual SPL_IR codeGen() const = 0;
 	};
+
 	
-	class LabelAst final: public Ast {
-	private:
-		int label;
-		std::unique_ptr<Ast> nonLabelAst;
-	public:
-		LabelAst(int label_, Ast* nonLabelAst_);
-		void __show(std::fstream& fout);
-		//Ast::SPL_IR codeGen() const;
-		~LabelAst();
-	};
-	
+
 	class ExprAst : public Ast
 		// ExprAst is Ast those has value, such as 2+3(MathAst),a[i](ArrayAst),a = 2+3, ...
 	{
@@ -55,11 +38,12 @@ namespace SPL {
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~ExprAst() = 0;
 	};
-	
+
 	class IndexAst {
 	public:
 		IndexAst() {};
 		~IndexAst() {};
+		virtual void __show(std::fstream& fout) {};
 	};
 	
 	class MathAst final : public ExprAst {
@@ -87,10 +71,13 @@ namespace SPL {
 		ConstAst(bool x);
 		ConstAst(std::string x);
 		void __show(std::fstream& fout);
+		SPL_TYPE getType() {return this->type;};
+		valueUnion getValue() {return this->value;};
 		//Ast::SPL_IR codeGen() const;
 		~ConstAst();
 	};
-	
+
+
 	class VarAst : public ExprAst{
     public:
 		//virtual Ast::SPL_IR genPtr() const = 0;
@@ -108,7 +95,7 @@ namespace SPL {
 		//Ast::SPL_IR genPtr() const override;
 	};
 
-	
+
 	class ArrayAst final : public VarAst {
 	protected:
 		//void print(void);
@@ -135,7 +122,7 @@ namespace SPL {
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~StmtAst() = 0;
 	};
-	class AssignAst final :public ExprAst, public StmtAst {
+	class AssignAst final : public StmtAst {
 	protected:
 		std::unique_ptr<VarAst> lhs;
 		std::unique_ptr<ExprAst> rhs;
@@ -145,6 +132,17 @@ namespace SPL {
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		//Ast::SPL_IR codeGen() const;
+	};
+
+	class LabelAst final: public StmtAst {
+	private:
+		int label;
+		std::unique_ptr<StmtAst> nonLabelAst;
+	public:
+		LabelAst(int label_, StmtAst* nonLabelAst_);
+		void __show(std::fstream& fout);
+		//Ast::SPL_IR codeGen() const;
+		~LabelAst();
 	};
 
 	class IfAst final :public StmtAst {
@@ -242,6 +240,13 @@ namespace SPL {
 		std::vector<std::unique_ptr<StmtAst>> stmtList;
 	public:
 		CompoundAst(const std::vector<StmtAst*>& stmtList_);
+		void addStmt(StmtAst* p) { std::unique_ptr<StmtAst> t(p); this->stmtList.push_back(std::move(t));}
+		void merge(CompoundAst* p) {
+			if (p==nullptr) return;
+			for (int i=0;i<(p->stmtList).size();i++) {
+				this->stmtList.push_back(std::move(p->stmtList[i]));
+			}
+		}
 		~CompoundAst();
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
@@ -251,30 +256,57 @@ namespace SPL {
 	class FuncAst : public ExprAst,public StmtAst
 	{
 	protected:
-		bool isProc;
 		std::string funcName;
 		std::vector<std::unique_ptr<ExprAst>> argList;
 	public:
 		FuncAst();
-		FuncAst(bool isProc_, std::string& funcName_, std::vector<ExprAst*> argList_);
+		FuncAst(std::string& funcName_, std::vector<ExprAst*> argList_);
 		~FuncAst();
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		//Ast::SPL_IR codeGen() const override;
 	};
 
-	class TypeAst:public Ast
+	class TypeAst:public StmtAst
 	{
+	
+	public:
+		TypeAst();
+		virtual void __show(std::fstream& fout) = 0;
+		virtual ~TypeAst() = 0;
+		//llvm::Type* codeGen() const;
+	};
+
+	class SimpleTypeAst: public TypeAst {
 	private:
 		std::string name;
-		bool isArray;
-		std::unique_ptr<TypeAst> ArrayMemType;
-		int arrayLen;
 	public:
-		TypeAst(const std::string& t_name, bool isArray_=false, TypeAst* ArrayMemType_=nullptr, int arrayLen_=0);
+		SimpleTypeAst(const std::string& name_);
+		std::string getName() {return name;};
 		void __show(std::fstream& fout);
-		~TypeAst();
-		//llvm::Type* codeGen() const;
+		~SimpleTypeAst();
+	};
+
+	class ArrayTypeAst: public TypeAst {
+	private:
+		std::unique_ptr<TypeAst> memberType;
+		std::unique_ptr<IndexAst> minIndex;
+		std::unique_ptr<IndexAst> maxIndex;
+	public:
+		ArrayTypeAst(TypeAst* memberType_, IndexAst* minIndex_, IndexAst* maxIndex_);
+		void __show(std::fstream& fout);
+		~ArrayTypeAst();
+	};
+
+	class RecordTypeAst: public TypeAst {
+	private:
+		std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> members;
+	public:
+		RecordTypeAst();
+		RecordTypeAst(std::vector<std::pair<TypeAst*, std::string> > members_);
+		void addMember(std::pair<TypeAst*, std::vector<std::string> > mem_);
+		void __show(std::fstream& fout);
+		~RecordTypeAst();
 	};
 
 
@@ -304,6 +336,27 @@ namespace SPL {
 		//llvm::Value* codeGen() const;
 	};
 
+	class ParaDecl {
+	public:
+		std::vector<std::pair<TypeAst*,std::string> > args;
+		std::vector<bool> is_var;
+		ParaDecl():args(),is_var() { ; };
+		void addPara(std::vector<std::string>& name_, TypeAst* type_, bool is_var_) {
+			for (auto n:name_) {
+				this->args.push_back(std::pair<TypeAst*,std::string> (type_,n));
+				this->is_var.push_back(is_var_);
+			}
+		};
+		void addList(ParaDecl* ParaP) {
+			for (int i=0;i<ParaP->args.size()&&i<ParaP->is_var.size();i++) {
+				this->args.push_back(ParaP->args[i]);
+				this->is_var.push_back(ParaP->is_var[i]);
+			}
+		};
+		~ParaDecl() {;};
+		
+	};
+
 	class FuncDeclAst final :public StmtAst
 	{
 	private:
@@ -327,24 +380,31 @@ namespace SPL {
 		valueUnion const_value;
 	public:
 		ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_value_);
+		
 		void __show(std::fstream& fout);
 		~ConstDeclAst();
 		//llvm::Function* codeGen() const;
 	};
 
-	class SimpleVarDeclAst final :public StmtAst
+	class VarDeclAst : public StmtAst {
+	public:
+		VarDeclAst() {};
+		~VarDeclAst() {};
+	};
+
+	class SimpleVarDeclAst final :public VarDeclAst
 	{
 	private:
-		std::string name;
+		std::vector<std::string> name;
 		std::unique_ptr<TypeAst> type;
 	public:
-		SimpleVarDeclAst(std::string& name_, TypeAst* type_);
+		SimpleVarDeclAst(std::vector<std::string>& name_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~SimpleVarDeclAst();
 		//llvm::Value* codeGen() const;
 	};
 
-	class TypeDeclAst final: public StmtAst {
+	class TypeDeclAst final: public VarDeclAst {
 	private:
 		std::string name;
 		std::unique_ptr<TypeAst> type;
@@ -355,27 +415,17 @@ namespace SPL {
 		//llvm::Value* codeGen() const;
 	};
 
-	class ArrayDeclAst final: public StmtAst{
+	class ArrayDeclAst final: public VarDeclAst{
 	private:
 		std::string name;
 		std::unique_ptr<IndexAst> minIndex;
 		std::unique_ptr<IndexAst> maxIndex;
 		std::unique_ptr<TypeAst> type;
 	public:
-		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type);
+		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~ArrayDeclAst();
 		//llvm::Value* codeGen() const;
-	};
-
-	class ReturnAst final :public StmtAst {
-	private:
-		std::unique_ptr<ExprAst> ret;
-
-	public:
-		ReturnAst(ExprAst* ret_);
-		void __show(std::fstream& fout);
-		~ReturnAst();
 	};
 
 
@@ -389,5 +439,5 @@ public:
 	~SysFuncAst();
 	//Ast::SPL_IR codeGen() const override;
 };
-	
+
 }
