@@ -77,7 +77,6 @@
 
 
     //typedef struct para para;
-    
     std::string true_string("true");
     std::string false_string("false");
     std::string maxint_string("maxint");
@@ -86,7 +85,7 @@
     std::string array_string("array:");
     int INT_MAX_SPL = 2147483647;
 
-#line 90 "parser.cpp" /* yacc.c:337  */
+#line 89 "parser.cpp" /* yacc.c:337  */
 # ifndef YY_NULLPTR
 #  if defined __cplusplus
 #   if 201103L <= __cplusplus
@@ -192,7 +191,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 21 "parser.y" /* yacc.c:352  */
+#line 20 "parser.y" /* yacc.c:352  */
 
 	SPL::Ast *ast;
 	SPL::ExprAst* exprast;
@@ -230,7 +229,7 @@ union YYSTYPE
 	int valInt;
 	bool valbool;
 
-#line 234 "parser.cpp" /* yacc.c:352  */
+#line 233 "parser.cpp" /* yacc.c:352  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -539,17 +538,17 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   148,   148,   156,   162,   170,   173,   175,   180,   187,
-     192,   196,   200,   207,   210,   212,   216,   222,   226,   229,
-     232,   237,   241,   244,   247,   250,   253,   257,   277,   281,
-     284,   289,   293,   296,   303,   305,   307,   310,   316,   321,
-     324,   328,   331,   334,   341,   345,   349,   353,   356,   361,
-     365,   370,   374,   379,   384,   388,   397,   401,   403,   407,
-     409,   411,   413,   415,   417,   419,   421,   425,   429,   433,
-     435,   439,   443,   447,   451,   453,   457,   461,   465,   468,
-     473,   475,   479,   481,   483,   485,   487,   489,   491,   495,
-     497,   499,   501,   505,   507,   509,   511,   513,   517,   519,
-     521,   523,   525,   527,   529,   533,   536,   539
+       0,   147,   147,   155,   161,   169,   172,   174,   179,   186,
+     191,   195,   199,   206,   209,   211,   215,   221,   225,   228,
+     231,   236,   240,   243,   246,   249,   252,   256,   276,   280,
+     283,   288,   292,   295,   302,   304,   306,   309,   313,   323,
+     326,   330,   333,   336,   343,   347,   351,   355,   358,   363,
+     367,   372,   376,   381,   386,   390,   399,   403,   405,   409,
+     411,   413,   415,   417,   419,   421,   423,   427,   431,   435,
+     437,   441,   445,   449,   453,   455,   459,   463,   467,   470,
+     475,   477,   481,   483,   485,   487,   489,   491,   493,   497,
+     499,   501,   503,   507,   509,   511,   513,   515,   519,   521,
+     523,   525,   527,   529,   531,   535,   538,   541
 };
 #endif
 
@@ -1498,7 +1497,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 148 "parser.y" /* yacc.c:1652  */
+#line 147 "parser.y" /* yacc.c:1652  */
     {
 //TODO
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
@@ -1506,21 +1505,21 @@ yyreduce:
 	program = (yyval.compoundast);
 	//program = $$;
 }
-#line 1510 "parser.cpp" /* yacc.c:1652  */
+#line 1509 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 3:
-#line 156 "parser.y" /* yacc.c:1652  */
+#line 155 "parser.y" /* yacc.c:1652  */
     {
 	//$$ = new SPL::RoutineAst($<routineheadast>1, $<compoundast>2);
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
 	(yyval.compoundast) -> merge((yyvsp[0].compoundast));
 }
-#line 1520 "parser.cpp" /* yacc.c:1652  */
+#line 1519 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 4:
-#line 162 "parser.y" /* yacc.c:1652  */
+#line 161 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[-3].compoundast);
 	if ((yyval.compoundast)==nullptr) (yyval.compoundast) = new SPL::CompoundAst(std::vector<SPL::StmtAst*>());
@@ -1528,199 +1527,199 @@ yyreduce:
 	(yyval.compoundast) -> merge((yyvsp[-1].compoundast));
 	(yyval.compoundast) -> merge((yyvsp[0].compoundast));
 }
-#line 1532 "parser.cpp" /* yacc.c:1652  */
+#line 1531 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 5:
-#line 170 "parser.y" /* yacc.c:1652  */
+#line 169 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[0].compoundast);
 }
-#line 1540 "parser.cpp" /* yacc.c:1652  */
+#line 1539 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 6:
-#line 173 "parser.y" /* yacc.c:1652  */
+#line 172 "parser.y" /* yacc.c:1652  */
     {(yyval.compoundast) = nullptr;}
-#line 1546 "parser.cpp" /* yacc.c:1652  */
+#line 1545 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 7:
-#line 175 "parser.y" /* yacc.c:1652  */
+#line 174 "parser.y" /* yacc.c:1652  */
     {
 	SPL::ConstDeclAst* t = new SPL::ConstDeclAst(*(yyvsp[-3].stringPtr), (yyvsp[-1].constast)->getType(), (yyvsp[-1].constast)->getValue());
 	(yyval.compoundast) = (yyvsp[-4].compoundast);
 	(yyval.compoundast)->addStmt(t);
 }
-#line 1556 "parser.cpp" /* yacc.c:1652  */
+#line 1555 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 8:
-#line 180 "parser.y" /* yacc.c:1652  */
+#line 179 "parser.y" /* yacc.c:1652  */
     {
 	SPL::ConstDeclAst* t = new SPL::ConstDeclAst(*(yyvsp[-3].stringPtr), (yyvsp[-1].constast)->getType(), (yyvsp[-1].constast)->getValue());
 	std::vector<SPL::StmtAst*> vect;
 	vect.push_back(t);
 	(yyval.compoundast) = new SPL::CompoundAst(vect);
 }
-#line 1567 "parser.cpp" /* yacc.c:1652  */
+#line 1566 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 9:
-#line 187 "parser.y" /* yacc.c:1652  */
+#line 186 "parser.y" /* yacc.c:1652  */
     {
 	std::string* t = (yyvsp[0].stringPtr);
 	(yyval.constast) = new SPL::ConstAst(std::stoi(*t));
 
 }
-#line 1577 "parser.cpp" /* yacc.c:1652  */
+#line 1576 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 10:
-#line 192 "parser.y" /* yacc.c:1652  */
+#line 191 "parser.y" /* yacc.c:1652  */
     {
 	std::string* t = (yyvsp[0].stringPtr);
 	(yyval.constast) = new SPL::ConstAst(std::stod(*t));
 }
-#line 1586 "parser.cpp" /* yacc.c:1652  */
+#line 1585 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 11:
-#line 196 "parser.y" /* yacc.c:1652  */
+#line 195 "parser.y" /* yacc.c:1652  */
     {
 	std::string* t = (yyvsp[0].stringPtr);
 	(yyval.constast) = new SPL::ConstAst((*t)[1]);
 }
-#line 1595 "parser.cpp" /* yacc.c:1652  */
+#line 1594 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 12:
-#line 200 "parser.y" /* yacc.c:1652  */
+#line 199 "parser.y" /* yacc.c:1652  */
     {
 	std::string* t = (yyvsp[0].stringPtr);
 	if (*t == maxint_string)  (yyval.constast) = new SPL::ConstAst(INT_MAX_SPL);
 	else if (*t == true_string) (yyval.constast) = new SPL::ConstAst(true);
 	else if (*t == false_string) (yyval.constast) = new SPL::ConstAst(false);
 }
-#line 1606 "parser.cpp" /* yacc.c:1652  */
+#line 1605 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 13:
-#line 207 "parser.y" /* yacc.c:1652  */
+#line 206 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[0].compoundast);
 }
-#line 1614 "parser.cpp" /* yacc.c:1652  */
+#line 1613 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 14:
-#line 210 "parser.y" /* yacc.c:1652  */
+#line 209 "parser.y" /* yacc.c:1652  */
     {(yyval.compoundast) = nullptr; }
-#line 1620 "parser.cpp" /* yacc.c:1652  */
+#line 1619 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 15:
-#line 212 "parser.y" /* yacc.c:1652  */
+#line 211 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
 	(yyval.compoundast)->addStmt((yyvsp[0].typedeclast));
 }
-#line 1629 "parser.cpp" /* yacc.c:1652  */
+#line 1628 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 16:
-#line 216 "parser.y" /* yacc.c:1652  */
+#line 215 "parser.y" /* yacc.c:1652  */
     {
 	std::vector<SPL::StmtAst*> vect;
 	vect.push_back((yyvsp[0].typedeclast));
 	(yyval.compoundast) = new SPL::CompoundAst(vect);
 }
-#line 1639 "parser.cpp" /* yacc.c:1652  */
+#line 1638 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 17:
-#line 222 "parser.y" /* yacc.c:1652  */
+#line 221 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.typedeclast) = new SPL::TypeDeclAst(*((yyvsp[-3].stringPtr)), (yyvsp[-1].typeast));
 }
-#line 1647 "parser.cpp" /* yacc.c:1652  */
+#line 1646 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 18:
-#line 226 "parser.y" /* yacc.c:1652  */
+#line 225 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.typeast) = (yyvsp[0].simpletypeast);
 }
-#line 1655 "parser.cpp" /* yacc.c:1652  */
+#line 1654 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 19:
-#line 229 "parser.y" /* yacc.c:1652  */
+#line 228 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.typeast) = (yyvsp[0].arraytypeast);
 }
-#line 1663 "parser.cpp" /* yacc.c:1652  */
+#line 1662 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 20:
-#line 232 "parser.y" /* yacc.c:1652  */
+#line 231 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.typeast) = (yyvsp[0].recordtypeast);
 }
-#line 1671 "parser.cpp" /* yacc.c:1652  */
+#line 1670 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 21:
-#line 237 "parser.y" /* yacc.c:1652  */
+#line 236 "parser.y" /* yacc.c:1652  */
     {
 	std::string t = *((yyvsp[0].stringPtr));
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(t);
 }
-#line 1680 "parser.cpp" /* yacc.c:1652  */
+#line 1679 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 22:
-#line 241 "parser.y" /* yacc.c:1652  */
+#line 240 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(*((yyvsp[0].stringPtr)));
 }
-#line 1688 "parser.cpp" /* yacc.c:1652  */
+#line 1687 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 23:
-#line 244 "parser.y" /* yacc.c:1652  */
+#line 243 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(std::to_string(((yyvsp[-2].constast))->getValue().valInt)+dotdot_string+std::to_string(((yyvsp[0].constast))->getValue().valInt));
 }
-#line 1696 "parser.cpp" /* yacc.c:1652  */
+#line 1695 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 24:
-#line 247 "parser.y" /* yacc.c:1652  */
+#line 246 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(minus_string+std::to_string(((yyvsp[-2].constast))->getValue().valInt)+dotdot_string+std::to_string(((yyvsp[0].constast))->getValue().valInt));
 }
-#line 1704 "parser.cpp" /* yacc.c:1652  */
+#line 1703 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 25:
-#line 250 "parser.y" /* yacc.c:1652  */
+#line 249 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(minus_string+std::to_string(((yyvsp[-3].constast))->getValue().valInt)+dotdot_string+minus_string+std::to_string(((yyvsp[0].constast))->getValue().valInt));
 }
-#line 1712 "parser.cpp" /* yacc.c:1652  */
+#line 1711 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 26:
-#line 253 "parser.y" /* yacc.c:1652  */
+#line 252 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.simpletypeast) = new SPL::SimpleTypeAst(*((yyvsp[-2].stringPtr))+dotdot_string+*((yyvsp[0].stringPtr)));
 }
-#line 1720 "parser.cpp" /* yacc.c:1652  */
+#line 1719 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 27:
-#line 257 "parser.y" /* yacc.c:1652  */
+#line 256 "parser.y" /* yacc.c:1652  */
     {
 	std::string str = ((yyvsp[-3].simpletypeast))->getName();
 	int i=0;
@@ -1740,245 +1739,248 @@ yyreduce:
 	}
 	(yyval.arraytypeast) = new SPL::ArrayTypeAst( (yyvsp[0].typeast) , minIndex_, maxIndex_);
 }
-#line 1744 "parser.cpp" /* yacc.c:1652  */
+#line 1743 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 28:
-#line 277 "parser.y" /* yacc.c:1652  */
+#line 276 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.recordtypeast) = (yyvsp[-1].recordtypeast);
 }
-#line 1752 "parser.cpp" /* yacc.c:1652  */
+#line 1751 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 29:
-#line 281 "parser.y" /* yacc.c:1652  */
+#line 280 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.recordtypeast) = (yyvsp[-1].recordtypeast);
 	(yyval.recordtypeast) -> addMember(*(yyvsp[0].recordunit));
 }
-#line 1761 "parser.cpp" /* yacc.c:1652  */
+#line 1760 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 30:
-#line 284 "parser.y" /* yacc.c:1652  */
+#line 283 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.recordtypeast) = new SPL::RecordTypeAst();
 	(yyval.recordtypeast) -> addMember(*(yyvsp[0].recordunit));
 }
-#line 1770 "parser.cpp" /* yacc.c:1652  */
+#line 1769 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 31:
-#line 289 "parser.y" /* yacc.c:1652  */
+#line 288 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.recordunit) = new std::pair<SPL::TypeAst*, std::vector<std::string> > ((yyvsp[-1].typeast), *(yyvsp[-3].vecstrPtr));
 }
-#line 1778 "parser.cpp" /* yacc.c:1652  */
+#line 1777 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 32:
-#line 293 "parser.y" /* yacc.c:1652  */
+#line 292 "parser.y" /* yacc.c:1652  */
     {
 	(yyvsp[-2].vecstrPtr)->push_back(*(yyvsp[0].stringPtr));
 	(yyval.vecstrPtr) = (yyvsp[-2].vecstrPtr);
 }
-#line 1787 "parser.cpp" /* yacc.c:1652  */
+#line 1786 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 33:
-#line 296 "parser.y" /* yacc.c:1652  */
+#line 295 "parser.y" /* yacc.c:1652  */
     {
 	std::string t = std::string(*((yyvsp[0].stringPtr)));
 	(yyval.vecstrPtr) = new std::vector<std::string> ();
 	(yyval.vecstrPtr)->push_back(t);
 }
-#line 1797 "parser.cpp" /* yacc.c:1652  */
+#line 1796 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 34:
-#line 303 "parser.y" /* yacc.c:1652  */
+#line 302 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[0].compoundast);
 }
-#line 1805 "parser.cpp" /* yacc.c:1652  */
+#line 1804 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 35:
-#line 305 "parser.y" /* yacc.c:1652  */
+#line 304 "parser.y" /* yacc.c:1652  */
     {(yyval.compoundast) = nullptr;}
-#line 1811 "parser.cpp" /* yacc.c:1652  */
+#line 1810 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 36:
-#line 307 "parser.y" /* yacc.c:1652  */
+#line 306 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
-	(yyval.compoundast)->addStmt((yyvsp[0].simplevardeclast));
+	(yyval.compoundast)->merge((yyvsp[0].compoundast));
 }
-#line 1820 "parser.cpp" /* yacc.c:1652  */
+#line 1819 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 37:
-#line 310 "parser.y" /* yacc.c:1652  */
+#line 309 "parser.y" /* yacc.c:1652  */
     {
-	std::vector<SPL::StmtAst*> vect;
-	vect.push_back((yyvsp[0].simplevardeclast));
-	(yyval.compoundast) = new SPL::CompoundAst(vect);
+	(yyval.compoundast) = (yyvsp[0].compoundast);
 }
-#line 1830 "parser.cpp" /* yacc.c:1652  */
+#line 1827 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 38:
-#line 316 "parser.y" /* yacc.c:1652  */
+#line 313 "parser.y" /* yacc.c:1652  */
     {
-	(yyval.simplevardeclast) = new SPL::SimpleVarDeclAst(*((yyvsp[-3].vecstrPtr)), (yyvsp[-1].typeast));
+
+	(yyval.compoundast) = new SPL::CompoundAst(std::vector<SPL::StmtAst*> () );
+	for (auto name: *((yyvsp[-3].vecstrPtr)) ) {
+		(yyval.compoundast) -> addStmt(new SPL::SimpleVarDeclAst(name, (yyvsp[-1].typeast) ));
+	}
+
 }
-#line 1838 "parser.cpp" /* yacc.c:1652  */
+#line 1840 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 39:
-#line 321 "parser.y" /* yacc.c:1652  */
+#line 323 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
 	(yyval.compoundast)->addStmt((yyvsp[0].funcdeclast));
 }
-#line 1847 "parser.cpp" /* yacc.c:1652  */
+#line 1849 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 40:
-#line 324 "parser.y" /* yacc.c:1652  */
+#line 326 "parser.y" /* yacc.c:1652  */
     {
 	std::vector<SPL::StmtAst*> t;
 	t.push_back((yyvsp[0].funcdeclast));
 	(yyval.compoundast) = new SPL::CompoundAst(t);
 }
-#line 1857 "parser.cpp" /* yacc.c:1652  */
+#line 1859 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 41:
-#line 328 "parser.y" /* yacc.c:1652  */
+#line 330 "parser.y" /* yacc.c:1652  */
     {
 	std::vector<SPL::StmtAst*> t;
 	(yyval.compoundast) = new SPL::CompoundAst(t);
 }
-#line 1866 "parser.cpp" /* yacc.c:1652  */
+#line 1868 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 42:
-#line 331 "parser.y" /* yacc.c:1652  */
+#line 333 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[-1].compoundast);
 	(yyval.compoundast)->addStmt((yyvsp[0].funcdeclast));
 }
-#line 1875 "parser.cpp" /* yacc.c:1652  */
+#line 1877 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 43:
-#line 334 "parser.y" /* yacc.c:1652  */
+#line 336 "parser.y" /* yacc.c:1652  */
     {
 	std::vector<SPL::StmtAst*> t;
 	t.push_back((yyvsp[0].funcdeclast));
 	(yyval.compoundast) = new SPL::CompoundAst(t);
 }
-#line 1885 "parser.cpp" /* yacc.c:1652  */
+#line 1887 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 44:
-#line 341 "parser.y" /* yacc.c:1652  */
+#line 343 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.funcdeclast) = new SPL::FuncDeclAst(*((yyvsp[-6].stringPtr)), (yyvsp[-1].compoundast), (yyvsp[-5].paradecl)->args, (yyvsp[-5].paradecl)->is_var, (yyvsp[-3].typeast) );
 }
-#line 1893 "parser.cpp" /* yacc.c:1652  */
+#line 1895 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 45:
-#line 345 "parser.y" /* yacc.c:1652  */
+#line 347 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.funcdeclast) = new SPL::FuncDeclAst(*((yyvsp[-4].stringPtr)), (yyvsp[-1].compoundast), (yyvsp[-3].paradecl)->args, (yyvsp[-3].paradecl)->is_var, nullptr );
 }
-#line 1901 "parser.cpp" /* yacc.c:1652  */
+#line 1903 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 46:
-#line 349 "parser.y" /* yacc.c:1652  */
+#line 351 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.paradecl) = (yyvsp[-1].paradecl);
 }
-#line 1909 "parser.cpp" /* yacc.c:1652  */
+#line 1911 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 47:
-#line 353 "parser.y" /* yacc.c:1652  */
+#line 355 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.paradecl) = (yyvsp[-2].paradecl);
 	(yyval.paradecl) -> addList((yyvsp[0].paradecl));
 }
-#line 1918 "parser.cpp" /* yacc.c:1652  */
+#line 1920 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 48:
-#line 356 "parser.y" /* yacc.c:1652  */
+#line 358 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.paradecl) = new SPL::ParaDecl();
 	(yyval.paradecl) -> addList((yyvsp[0].paradecl));
 }
-#line 1927 "parser.cpp" /* yacc.c:1652  */
+#line 1929 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 49:
-#line 361 "parser.y" /* yacc.c:1652  */
+#line 363 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.paradecl) = new SPL::ParaDecl();
 	(yyval.paradecl)->addPara(*(yyvsp[-2].vecstrPtr), (yyvsp[0].typeast), true);
 }
-#line 1936 "parser.cpp" /* yacc.c:1652  */
+#line 1938 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 50:
-#line 365 "parser.y" /* yacc.c:1652  */
+#line 367 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.paradecl) = new SPL::ParaDecl();
 	(yyval.paradecl)->addPara(*(yyvsp[-2].vecstrPtr), (yyvsp[0].typeast), false);
 }
-#line 1945 "parser.cpp" /* yacc.c:1652  */
+#line 1947 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 51:
-#line 370 "parser.y" /* yacc.c:1652  */
+#line 372 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecstrPtr) = (yyvsp[0].vecstrPtr);
 }
-#line 1953 "parser.cpp" /* yacc.c:1652  */
+#line 1955 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 52:
-#line 374 "parser.y" /* yacc.c:1652  */
+#line 376 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecstrPtr) = (yyvsp[0].vecstrPtr);
 }
-#line 1961 "parser.cpp" /* yacc.c:1652  */
+#line 1963 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 53:
-#line 379 "parser.y" /* yacc.c:1652  */
+#line 381 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = (yyvsp[0].compoundast);
 	//program_routine_body = $<compoundast>1;
 }
-#line 1970 "parser.cpp" /* yacc.c:1652  */
+#line 1972 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 54:
-#line 384 "parser.y" /* yacc.c:1652  */
+#line 386 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.compoundast) = new SPL::CompoundAst(*(yyvsp[-1].vecstmtastPtr));
 }
-#line 1978 "parser.cpp" /* yacc.c:1652  */
+#line 1980 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 55:
-#line 388 "parser.y" /* yacc.c:1652  */
+#line 390 "parser.y" /* yacc.c:1652  */
     {
 	if ((yyvsp[-2].vecstmtastPtr)) {
 		(yyval.vecstmtastPtr) = (yyvsp[-2].vecstmtastPtr);
@@ -1988,431 +1990,431 @@ yyreduce:
 		(yyval.vecstmtastPtr)->push_back((yyvsp[-1].stmtast));
 	}
 }
-#line 1992 "parser.cpp" /* yacc.c:1652  */
+#line 1994 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 56:
-#line 397 "parser.y" /* yacc.c:1652  */
+#line 399 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecstmtastPtr) = nullptr;
 }
-#line 2000 "parser.cpp" /* yacc.c:1652  */
+#line 2002 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 57:
-#line 401 "parser.y" /* yacc.c:1652  */
+#line 403 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = new SPL::LabelAst(std::stoi(*(yyvsp[-2].stringPtr)), (yyvsp[0].stmtast));
 }
-#line 2008 "parser.cpp" /* yacc.c:1652  */
+#line 2010 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 58:
-#line 403 "parser.y" /* yacc.c:1652  */
+#line 405 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].stmtast);
 }
-#line 2016 "parser.cpp" /* yacc.c:1652  */
+#line 2018 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 59:
-#line 407 "parser.y" /* yacc.c:1652  */
+#line 409 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].assignast);
 }
-#line 2024 "parser.cpp" /* yacc.c:1652  */
+#line 2026 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 60:
-#line 409 "parser.y" /* yacc.c:1652  */
+#line 411 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].compoundast);
 }
-#line 2032 "parser.cpp" /* yacc.c:1652  */
+#line 2034 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 61:
-#line 411 "parser.y" /* yacc.c:1652  */
+#line 413 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].ifast);
 }
-#line 2040 "parser.cpp" /* yacc.c:1652  */
+#line 2042 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 62:
-#line 413 "parser.y" /* yacc.c:1652  */
+#line 415 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].repeatast);
 }
-#line 2048 "parser.cpp" /* yacc.c:1652  */
+#line 2050 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 63:
-#line 415 "parser.y" /* yacc.c:1652  */
+#line 417 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].whileast);
 }
-#line 2056 "parser.cpp" /* yacc.c:1652  */
+#line 2058 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 64:
-#line 417 "parser.y" /* yacc.c:1652  */
+#line 419 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].forast);
 }
-#line 2064 "parser.cpp" /* yacc.c:1652  */
+#line 2066 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 65:
-#line 419 "parser.y" /* yacc.c:1652  */
+#line 421 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].caseast);
 }
-#line 2072 "parser.cpp" /* yacc.c:1652  */
+#line 2074 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 66:
-#line 421 "parser.y" /* yacc.c:1652  */
+#line 423 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].gotoast);
 }
-#line 2080 "parser.cpp" /* yacc.c:1652  */
+#line 2082 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 67:
-#line 425 "parser.y" /* yacc.c:1652  */
+#line 427 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.assignast) = new SPL::AssignAst(new SPL::SymbolAst(*((yyvsp[-2].stringPtr))), (yyvsp[0].exprast) );
 }
-#line 2088 "parser.cpp" /* yacc.c:1652  */
+#line 2090 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 68:
-#line 429 "parser.y" /* yacc.c:1652  */
+#line 431 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.ifast) = new SPL::IfAst((yyvsp[-3].exprast), (yyvsp[-1].stmtast), (yyvsp[0].stmtast));
 }
-#line 2096 "parser.cpp" /* yacc.c:1652  */
+#line 2098 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 69:
-#line 433 "parser.y" /* yacc.c:1652  */
+#line 435 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = (yyvsp[0].stmtast);
 }
-#line 2104 "parser.cpp" /* yacc.c:1652  */
+#line 2106 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 70:
-#line 435 "parser.y" /* yacc.c:1652  */
+#line 437 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.stmtast) = nullptr;
 }
-#line 2112 "parser.cpp" /* yacc.c:1652  */
+#line 2114 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 71:
-#line 439 "parser.y" /* yacc.c:1652  */
+#line 441 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.repeatast) = new SPL::RepeatAst(*(yyvsp[-2].vecstmtastPtr), (yyvsp[0].exprast));
 }
-#line 2120 "parser.cpp" /* yacc.c:1652  */
+#line 2122 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 72:
-#line 443 "parser.y" /* yacc.c:1652  */
+#line 445 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.whileast) = new SPL::WhileAst((yyvsp[-2].exprast),(yyvsp[0].stmtast));
 }
-#line 2128 "parser.cpp" /* yacc.c:1652  */
+#line 2130 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 73:
-#line 447 "parser.y" /* yacc.c:1652  */
+#line 449 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.forast) = new SPL::ForAst(new SPL::SymbolAst(*(yyvsp[-6].stringPtr)),(yyvsp[-4].exprast),(yyvsp[-3].valbool),(yyvsp[-2].exprast),(yyvsp[0].stmtast));
 }
-#line 2136 "parser.cpp" /* yacc.c:1652  */
+#line 2138 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 74:
-#line 451 "parser.y" /* yacc.c:1652  */
+#line 453 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.valbool) = true;
 }
-#line 2144 "parser.cpp" /* yacc.c:1652  */
+#line 2146 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 75:
-#line 453 "parser.y" /* yacc.c:1652  */
+#line 455 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.valbool) = false;
 }
-#line 2152 "parser.cpp" /* yacc.c:1652  */
+#line 2154 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 76:
-#line 457 "parser.y" /* yacc.c:1652  */
+#line 459 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.caseast) = new SPL::CaseAst((yyvsp[-3].exprast), *(yyvsp[-1].veccaseunitPtr));
 }
-#line 2160 "parser.cpp" /* yacc.c:1652  */
+#line 2162 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 77:
-#line 461 "parser.y" /* yacc.c:1652  */
+#line 463 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.gotoast) = new SPL::GotoAst(std::stoi(*(yyvsp[-1].stringPtr)));
 }
-#line 2168 "parser.cpp" /* yacc.c:1652  */
+#line 2170 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 78:
-#line 465 "parser.y" /* yacc.c:1652  */
+#line 467 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.veccaseunitPtr) = (yyvsp[-1].veccaseunitPtr);
 	(yyval.veccaseunitPtr)->push_back((yyvsp[0].caseunit));
 }
-#line 2177 "parser.cpp" /* yacc.c:1652  */
+#line 2179 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 79:
-#line 468 "parser.y" /* yacc.c:1652  */
+#line 470 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.veccaseunitPtr) = new std::vector<SPL::CaseUnit*>();
 	(yyval.veccaseunitPtr)->push_back((yyvsp[0].caseunit));
 }
-#line 2186 "parser.cpp" /* yacc.c:1652  */
+#line 2188 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 80:
-#line 473 "parser.y" /* yacc.c:1652  */
-    {
-	(yyval.caseunit) = new SPL::CaseUnit((yyvsp[-3].exprast), (yyvsp[-1].stmtast));
-}
-#line 2194 "parser.cpp" /* yacc.c:1652  */
-    break;
-
-  case 81:
 #line 475 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.caseunit) = new SPL::CaseUnit((yyvsp[-3].exprast), (yyvsp[-1].stmtast));
 }
-#line 2202 "parser.cpp" /* yacc.c:1652  */
+#line 2196 "parser.cpp" /* yacc.c:1652  */
+    break;
+
+  case 81:
+#line 477 "parser.y" /* yacc.c:1652  */
+    {
+	(yyval.caseunit) = new SPL::CaseUnit((yyvsp[-3].exprast), (yyvsp[-1].stmtast));
+}
+#line 2204 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 82:
-#line 479 "parser.y" /* yacc.c:1652  */
+#line 481 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_GE,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2210 "parser.cpp" /* yacc.c:1652  */
+#line 2212 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 83:
-#line 481 "parser.y" /* yacc.c:1652  */
+#line 483 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_GT,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2218 "parser.cpp" /* yacc.c:1652  */
+#line 2220 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 84:
-#line 483 "parser.y" /* yacc.c:1652  */
+#line 485 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_LE,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2226 "parser.cpp" /* yacc.c:1652  */
+#line 2228 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 85:
-#line 485 "parser.y" /* yacc.c:1652  */
+#line 487 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_LT,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2234 "parser.cpp" /* yacc.c:1652  */
+#line 2236 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 86:
-#line 487 "parser.y" /* yacc.c:1652  */
+#line 489 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_EQ,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2242 "parser.cpp" /* yacc.c:1652  */
+#line 2244 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 87:
-#line 489 "parser.y" /* yacc.c:1652  */
+#line 491 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_NE,(yyvsp[-2].exprast),(yyvsp[0].exprast));
 }
-#line 2250 "parser.cpp" /* yacc.c:1652  */
+#line 2252 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 88:
-#line 491 "parser.y" /* yacc.c:1652  */
+#line 493 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = (yyvsp[0].exprast);
 }
-#line 2258 "parser.cpp" /* yacc.c:1652  */
+#line 2260 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 89:
-#line 495 "parser.y" /* yacc.c:1652  */
+#line 497 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_ADD,(yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2266 "parser.cpp" /* yacc.c:1652  */
+#line 2268 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 90:
-#line 497 "parser.y" /* yacc.c:1652  */
+#line 499 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_SUB,(yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2274 "parser.cpp" /* yacc.c:1652  */
+#line 2276 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 91:
-#line 499 "parser.y" /* yacc.c:1652  */
+#line 501 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_OR,(yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2282 "parser.cpp" /* yacc.c:1652  */
+#line 2284 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 92:
-#line 501 "parser.y" /* yacc.c:1652  */
+#line 503 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = (yyvsp[0].exprast);
 }
-#line 2290 "parser.cpp" /* yacc.c:1652  */
+#line 2292 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 93:
-#line 505 "parser.y" /* yacc.c:1652  */
+#line 507 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_MUL, (yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2298 "parser.cpp" /* yacc.c:1652  */
+#line 2300 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 94:
-#line 507 "parser.y" /* yacc.c:1652  */
+#line 509 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_DIV, (yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2306 "parser.cpp" /* yacc.c:1652  */
+#line 2308 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 95:
-#line 509 "parser.y" /* yacc.c:1652  */
+#line 511 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_MOD, (yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2314 "parser.cpp" /* yacc.c:1652  */
+#line 2316 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 96:
-#line 511 "parser.y" /* yacc.c:1652  */
+#line 513 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_AND, (yyvsp[-2].exprast), (yyvsp[0].exprast));
 }
-#line 2322 "parser.cpp" /* yacc.c:1652  */
+#line 2324 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 97:
-#line 513 "parser.y" /* yacc.c:1652  */
+#line 515 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = (yyvsp[0].exprast);
 }
-#line 2330 "parser.cpp" /* yacc.c:1652  */
+#line 2332 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 98:
-#line 517 "parser.y" /* yacc.c:1652  */
+#line 519 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = (yyvsp[0].constast);
 }
-#line 2338 "parser.cpp" /* yacc.c:1652  */
+#line 2340 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 99:
-#line 519 "parser.y" /* yacc.c:1652  */
+#line 521 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::SymbolAst(*(yyvsp[0].stringPtr));
 }
-#line 2346 "parser.cpp" /* yacc.c:1652  */
+#line 2348 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 100:
-#line 521 "parser.y" /* yacc.c:1652  */
+#line 523 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_NG,(yyvsp[0].exprast), nullptr);
 }
-#line 2354 "parser.cpp" /* yacc.c:1652  */
+#line 2356 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 101:
-#line 523 "parser.y" /* yacc.c:1652  */
+#line 525 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::DotAst(new SPL::SymbolAst(*(yyvsp[-2].stringPtr)), *(yyvsp[-1].stringPtr));
 }
-#line 2362 "parser.cpp" /* yacc.c:1652  */
+#line 2364 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 102:
-#line 525 "parser.y" /* yacc.c:1652  */
+#line 527 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::ArrayAst(new SPL::SymbolAst(*(yyvsp[-3].stringPtr)), (yyvsp[-1].exprast));
 }
-#line 2370 "parser.cpp" /* yacc.c:1652  */
+#line 2372 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 103:
-#line 527 "parser.y" /* yacc.c:1652  */
+#line 529 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::MathAst(OP_NOT,(yyvsp[0].exprast), nullptr);
 }
-#line 2378 "parser.cpp" /* yacc.c:1652  */
+#line 2380 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 104:
-#line 529 "parser.y" /* yacc.c:1652  */
+#line 531 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.exprast) = new SPL::FuncAst(*(yyvsp[-3].stringPtr), *(yyvsp[-1].vecexprastPtr));
 }
-#line 2386 "parser.cpp" /* yacc.c:1652  */
+#line 2388 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 105:
-#line 533 "parser.y" /* yacc.c:1652  */
+#line 535 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecexprastPtr) = (yyvsp[-2].vecexprastPtr);
 	(yyval.vecexprastPtr) -> push_back((yyvsp[0].exprast));
 }
-#line 2395 "parser.cpp" /* yacc.c:1652  */
+#line 2397 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 106:
-#line 536 "parser.y" /* yacc.c:1652  */
+#line 538 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecexprastPtr) = new std::vector<SPL::ExprAst*> ();
 	(yyval.vecexprastPtr) -> push_back((yyvsp[0].exprast));
 }
-#line 2404 "parser.cpp" /* yacc.c:1652  */
+#line 2406 "parser.cpp" /* yacc.c:1652  */
     break;
 
   case 107:
-#line 539 "parser.y" /* yacc.c:1652  */
+#line 541 "parser.y" /* yacc.c:1652  */
     {
 	(yyval.vecexprastPtr) = new std::vector<SPL::ExprAst*> ();
 }
-#line 2412 "parser.cpp" /* yacc.c:1652  */
+#line 2414 "parser.cpp" /* yacc.c:1652  */
     break;
 
 
-#line 2416 "parser.cpp" /* yacc.c:1652  */
+#line 2418 "parser.cpp" /* yacc.c:1652  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
