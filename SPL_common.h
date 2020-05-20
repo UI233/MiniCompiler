@@ -9,8 +9,8 @@ enum SPL_TYPE {
 	STRING,
 	
 	//Maybe Useless
-	ARRAY,
-	RECORD,
+	ARRAY_TYPE,
+	RECORD_TYPE,
 	ERROR_VALUE
 };
 
@@ -22,13 +22,15 @@ enum SPL_OP {
 	OP_OR,
 	OP_AND,
 	OP_MOD,
+	OP_NOT,
+	OP_NG,  // negative, like: -1
 
 	OP_GE,
 	OP_GT,
 	OP_LE,
 	OP_LT,
-	OP_EQUAL,
-	OP_UNEQUAL
+	OP_EQ,
+	OP_NE
 
 	//filling
 };
@@ -36,7 +38,7 @@ enum SPL_OP {
 enum AST_NODE_TYPE {
 	AST_MATH = 1,
 	AST_EXPR,
-	AST_SYM,
+	AST_SYMBOL,
 	AST_ARRAY,
 	AST_DOT,
 	AST_ASSIGN,
@@ -48,7 +50,16 @@ enum AST_NODE_TYPE {
 	AST_GOTO,
 	AST_COMPOUND,
 	AST_FUNC,
-	AST_SYSFUNC
+	AST_SYSFUNC,
+	AST_LABEL,
+	AST_CONST_DECL,
+	AST_TYPE,
+	AST_RECORD_DECL,
+	AST_FUNC_DECL,
+	AST_SIMPLE_VAR_DECL,
+	AST_TYPE_DECL,
+	AST_ARRAY_DECL,
+	AST_RETURN
 };
 
 union valueUnion {
@@ -62,7 +73,9 @@ union valueUnion {
 };
 
 enum SYS_FUNC_ID {
-	SQRT = 1
+	SQRT = 1,
+	WRITE,
+	WRITELN
 };
 
 #endif

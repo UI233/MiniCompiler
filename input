@@ -1,0 +1,46 @@
+const
+	STU_MAX = 100;
+type
+	student = record 
+		s_id:integer;
+		score:real;
+	end;
+var
+	a,b,i,sumval : integer;
+	student_book : array [0..100] of student;
+
+function sum ( a : integer ; b : integer ) :  integer;
+	
+	var
+		i:integer;
+	begin
+		i:=0;
+		sum:=0;
+		for i:= a to b do
+		begin
+			sum:=sum+i;
+		end;
+	end;
+
+function add ( a : integer ; b : integer ) :  integer;
+	
+	begin
+		add := a+b;
+	end;
+
+procedure inc ( var a : integer );
+	begin
+		a := a+1;
+	end;
+
+begin
+	i := 0;
+	a := 0;
+	b := STU_MAX;
+	sumval := sum(a,b);
+	if sumval>=0 then
+		if sumval<5 then
+			i:=1
+		else
+			i:=0;
+end
