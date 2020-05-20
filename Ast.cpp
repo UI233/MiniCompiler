@@ -235,6 +235,8 @@ void IfAst::__show(std::fstream& fout) {
 	if (this->elseStmt) {
 		fout << "ElseAst:";
 		this->elseStmt->__show(fout);
+	} else {
+		fout << "No else"<<std::endl;
 	}
 }
 
@@ -468,15 +470,14 @@ ConstDeclAst::~ConstDeclAst() {
 	;
 }
 
-SimpleVarDeclAst::SimpleVarDeclAst(std::vector<std::string>& name_, TypeAst* type_) :
+SimpleVarDeclAst::SimpleVarDeclAst( std::string& name_, TypeAst* type_) :
 	name(name_), type(type_){
 	this->nodeType = AST_SIMPLE_VAR_DECL;
 }
 
 void SimpleVarDeclAst::__show(std::fstream& fout) {
-	for (std::string t:this->name) {
-		fout << "Simple var Decl Ast-name:" << t << std::endl;
-	}
+
+	fout << "Simple var Decl Ast-name:" << this->name << std::endl;
 	fout << "Simple var Decl Ast-type:";
 	this->type->__show(fout);
 }

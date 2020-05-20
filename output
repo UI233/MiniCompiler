@@ -12,8 +12,14 @@ Type:Simple Type Ast-name:
 real
 Record Type Ast-end.
 Simple var Decl Ast-name:a
+Simple var Decl Ast-type:Simple Type Ast-name:
+integer
 Simple var Decl Ast-name:b
+Simple var Decl Ast-type:Simple Type Ast-name:
+integer
 Simple var Decl Ast-name:i
+Simple var Decl Ast-type:Simple Type Ast-name:
+integer
 Simple var Decl Ast-name:sumval
 Simple var Decl Ast-type:Simple Type Ast-name:
 integer
@@ -127,4 +133,4 @@ RhsExprAst:Const Ast:INT:1
 ElseAst:AssignAst:
 LhsVarAst:SymbolAst:i
 RhsExprAst:Const Ast:INT:0
-Compound Ast END
+No elseCompound Ast END

@@ -117,7 +117,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 21 "parser.y" /* yacc.c:1921  */
+#line 20 "parser.y" /* yacc.c:1921  */
 
 	SPL::Ast *ast;
 	SPL::ExprAst* exprast;

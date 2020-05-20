@@ -8,7 +8,6 @@
 
 
     //typedef struct para para;
-    
     std::string true_string("true");
     std::string false_string("false");
     std::string maxint_string("maxint");
@@ -105,7 +104,7 @@
 %type <vecstrPtr> name_list
 %type <compoundast> var_part
 %type <compoundast> var_decl_list
-%type <simplevardeclast> var_decl
+%type <compoundast> var_decl
 %type <vecstmtastPtr> stmt_list
 %type <stmtast> stmt
 %type <compoundast> routine_body
@@ -306,15 +305,18 @@ var_part: TOKEN_VAR var_decl_list {
 
 var_decl_list: var_decl_list var_decl {
 	$$ = $1;
-	$$->addStmt($<simplevardeclast>2);
+	$$->merge($<compoundast>2);
 } | var_decl {
-	std::vector<SPL::StmtAst*> vect;
-	vect.push_back($<simplevardeclast>1);
-	$$ = new SPL::CompoundAst(vect);
+	$$ = $<compoundast>1;
 }
 
 var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
-	$$ = new SPL::SimpleVarDeclAst(*($<vecstrPtr>1), $<typeast>3);
+
+	$$ = new SPL::CompoundAst(std::vector<SPL::StmtAst*> () );
+	for (auto name: *($<vecstrPtr>1) ) {
+		$$ -> addStmt(new SPL::SimpleVarDeclAst(name, $<typeast>3 ));
+	}
+
 }
 
 

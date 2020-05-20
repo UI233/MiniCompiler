@@ -403,10 +403,10 @@ namespace SPL {
 	class SimpleVarDeclAst final :public VarDeclAst
 	{
 	private:
-		std::vector<std::string> name;
+		std::string name;
 		std::unique_ptr<TypeAst> type;
 	public:
-		SimpleVarDeclAst(std::vector<std::string>& name_, TypeAst* type_);
+		SimpleVarDeclAst(std::string name_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~SimpleVarDeclAst();
 		llvm::Value* codeGen() const;
