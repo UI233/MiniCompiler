@@ -7,7 +7,6 @@ type
 	int = integer;
 var
 	a,b,i,sumval : integer;
-	student_book : array [0..100] of student;
 
 function sum ( b : int ) :  double;
 	

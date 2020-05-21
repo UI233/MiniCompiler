@@ -19,14 +19,6 @@ integer
 Simple var Decl Ast-name:sumval
 Simple var Decl Ast-type:Simple Type Ast-name:
 integer
-Simple var Decl Ast-name:student_book
-Simple var Decl Ast-type:Array Type Ast-Type:
-Simple Type Ast-name:
-student
-Array Type Ast-minIndex:
-Const Ast:INT:0
-Array Type Ast-maxIndex:
-Const Ast:INT:100
 Func Decl Ast-name:sum
 Para:
 non-Var:bSimple Type Ast-name:
