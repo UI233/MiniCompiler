@@ -30,12 +30,12 @@ private:
         using NamedFunction = std::pair<llvm::Function*, std::vector<bool>>;
         using NamedConstant = std::pair<llvm::Constant*, valueUnion>;
         std::unordered_map<std::string, llvm::Value*> named_variable;
-        std::unordered_map<std::string, NamedStruct> named_record;
-        std::unordered_map<std::string, NamedArray> named_array;
         std::unordered_map<std::string, NamedFunction> named_function;
         std::unordered_map<std::string, llvm::BasicBlock*> named_label;
         std::unordered_map<std::string, NamedConstant> named_constant;
-        std::unordered_map<std::string, NamedType> named_type;
+        std::unordered_map<std::string, llvm::Type*> named_type;
+        std::unordered_map<llvm::Type*, llvm::ConstantInt*> named_array;
+        std::unordered_map<llvm::Type*, std::map<std::string, int>> named_record;
     };
     std::vector<Table> tables;
 public:
@@ -53,19 +53,19 @@ public:
 
     int getSymbolType(const std::string& name, bool current_scope = true) const;
     NamedFunction getFuncSymbol(const std::string& name) const;
-    NamedStruct getRecordSymbol(const std::string& name) const;
-    NamedArray getArraySymbol(const std::string& name) const;
+    std::map<std::string, int> getRecordMap(llvm::Type* struct_t) const;
+    llvm::ConstantInt* getArrayOffset(llvm::Type* arr_t) const;
     llvm::Value* getVarSymbol(const std::string& name) const;
     llvm::BasicBlock* getLabelSymbol(const std::string& name) const;
     NamedConstant getConstant(const std::string& name) const;
     NamedType getType(const std::string& name) const;
     bool insertVar(const std::string& name, llvm::Value* ptr);
-    bool insertRecord(const std::string& name, llvm::StructType* ty, const std::vector<std::string>& member_name);
+    bool insertRecord(llvm::StructType* ty, const std::vector<std::string>& member_name);
     bool insertFunction(const std::string& name, llvm::Function* func, const std::vector<bool>& is_var);
     bool insertLabel(const std::string& name, llvm::BasicBlock* block);
     bool insertConstant(const std::string& name, llvm::Constant* value, valueUnion value_v);
-    bool insertArray(const std::string& name, llvm::Value* arr, llvm::ConstantInt* offset);
-    bool insertType(const std::string& name, const NamedType& type);
+    bool insertArray(llvm::Type* arr_t, llvm::ConstantInt* offset);
+    bool insertType(const std::string& name, llvm::Type* type);
     bool hasName(const std::string& name, bool current_scope = true) const;
     void popScope() ;
     void pushScope() ;

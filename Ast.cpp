@@ -470,7 +470,7 @@ ConstDeclAst::~ConstDeclAst() {
 	;
 }
 
-SimpleVarDeclAst::SimpleVarDeclAst( std::string& name_, TypeAst* type_) :
+SimpleVarDeclAst::SimpleVarDeclAst(const std::string& name_, TypeAst* type_) :
 	name(name_), type(type_){
 	this->nodeType = AST_SIMPLE_VAR_DECL;
 }

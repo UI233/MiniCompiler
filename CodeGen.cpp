@@ -13,12 +13,12 @@
 #include "SymbolTable.h"
 #include "SystemFunc.h"
 
-namespace SPL 
-{
-constexpr int ERRORNO = -2184744;
 llvm::LLVMContext context;
 llvm::IRBuilder<> builder(context);
 llvm::Module module("MainModule", context);
+namespace SPL 
+{
+constexpr int ERRORNO = -2184744;
 SymbolTable st;
 
 void logError(const std::string& err) 
@@ -148,6 +148,8 @@ Ast::SPL_IR MathAst::codeGen() const
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
     OP_AND:
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateAnd(lhs, rhs, "ortmp");
+    default:
+        return nullptr;
     }
 }
 
@@ -180,7 +182,7 @@ Ast::SPL_IR ArrayAst::genPtr() const
         return nullptr;
     }
     llvm::Value* index = exp_index->codeGen();
-    llvm::Value* offset = st.getArraySymbol(arrayName);
+    llvm::Value* offset = st.getArrayOffset(array->getType());
     llvm::Value* offset_index = builder.CreateAdd(index, offset);
     if (!index->getType()->isIntegerTy())
     {
@@ -206,7 +208,7 @@ Ast::SPL_IR ArrayAst::codeGen() const
 Ast::SPL_IR DotAst::genPtr() const
 {
     auto record_ptr = record->genPtr();
-    auto struct_mem = st.getRecordSymbol(record->codeGen()->getType()->getStructName()).second;
+    auto struct_mem = st.getRecordMap(record->codeGen()->getType());
     if (!struct_mem.count(field))
     {
         logError("Record doesn't have field " + field);
@@ -299,7 +301,7 @@ Ast::SPL_IR AssignAst::codeGen() const
     return builder.CreateStore(value, var_ptr);
 }
 
-llvm::Type* TypeAst::codeGen() const
+llvm::Type* SimpleTypeAst::genType() const
 {
     auto struct_type = st.getType(name);
     if (struct_type.type)
@@ -318,7 +320,7 @@ llvm::Type* TypeAst::codeGen() const
 
 Ast::SPL_IR SimpleVarDeclAst::codeGen() const
 {
-    auto var_t = this->type->codeGen();
+    auto var_t = this->type->genType();
     if (!var_t)
         return nullptr;
     if (st.hasName(name))
@@ -328,13 +330,14 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
     }
 
     auto var = builder.CreateAlloca(var_t);
-    auto type_record = st.getType(type->getName());
-    if (type_record.is_array) {
-        auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_record.min_index);
-        st.insertArray(name, var, min_const);
-    }
-    else
-        st.insertVar(name, var);
+    // auto type_record = st.getType(type->getName());
+
+    // if (type_record.is_array) {
+    //     auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_record.min_index);
+    //     st.insertArray(name, var, min_const);
+    // }
+    // else
+    st.insertVar(name, var);
     return nullptr;
 }
 
@@ -350,7 +353,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     int idx = 0;
     for (auto& arg: args)
     {
-        auto arg_ty = arg.first->codeGen();
+        auto arg_ty = arg.first->genType();
         if (!arg_ty)
         {
             logError("Undefined type");
@@ -360,7 +363,7 @@ llvm::Value* FuncDeclAst::codeGen() const
             arg_ty = arg_ty->getPointerTo();
         arg_tys.push_back(arg_ty);
     }
-    auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->codeGen();
+    auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->genType();
     if (!ret_ty)
     {
         logError("Undefined type");
@@ -379,16 +382,16 @@ llvm::Value* FuncDeclAst::codeGen() const
     idx = 0;
     for (auto& arg: func->args())
     {
-        bool is_array = st.getType(args[idx].first->getName()).is_array;
+        // bool is_array = st.getType(args[idx].first->getName()).is_array;
         if (is_var[idx])
         {
-            if (is_array) {
-                auto min_value = st.getType(args[idx].first->getName()).min_index;
-                auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
-                st.insertArray(arg.getName(), &arg, min_const);
-            }
-            else
-                st.insertVar(arg.getName(), &arg);
+            // if (is_array) {
+            //     auto min_value = st.getType(args[idx].first->getName()).min_index;
+            //     auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
+            //     st.insertArray(arg.getName(), &arg, min_const);
+            // }
+            // else
+            st.insertVar(arg.getName(), &arg);
         }
         else 
         {
@@ -424,7 +427,7 @@ Ast::SPL_IR RecordDeclAst::codeGen() const
     std::vector<std::string> member_name;
     for (auto& member: members)
         member_name.push_back(member.second);
-    st.insertRecord(name, type, member_name);
+    st.insertRecord(type, member_name);
     return nullptr;
 }
 
@@ -438,7 +441,7 @@ llvm::StructType* RecordDeclAst::genType() const
     std::vector<llvm::Type*> member_ty;
     for (auto& member: members)
     {
-        member_ty.push_back(member.first->codeGen());
+        member_ty.push_back(member.first->genType());
         if (!member_ty.back())
         {
             logError("Undefined type");
@@ -495,23 +498,25 @@ Ast::SPL_IR ArrayDeclAst::codeGen() const
         logError("Length of array cannot be negative");
         return nullptr;
     }
-    auto arr_ty = type->codeGen();
-    if (!arr_ty)
+    auto ele_ty = type->genType();
+    if (!ele_ty)
         return nullptr;
-    auto arr_ptr = builder.CreateAlloca(arr_ty, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), length));
+    auto arr_ty = llvm::ArrayType::get(ele_ty, length);
+    auto arr_ptr = builder.CreateAlloca(arr_ty);
     auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
-    if (!st.insertArray(name, arr_ptr, min_const))
+    st.insertVar(name, arr_ptr);
+    if (!st.insertArray(arr_ty, min_const))
         logError(name + " has already been defined");
     return nullptr;
 }
 
-llvm::Type* ArrayDeclAst::genType() const
-{
-    int min_value = minIndex->genIndex();
-    int max_value = maxIndex->genIndex();
-    int length = max_value - min_value + 1;
-    return llvm::ArrayType::get(type->codeGen(), length);
-}
+// llvm::Type* ArrayDeclAst::genType() const
+// {
+//     int min_value = minIndex->genIndex();
+//     int max_value = maxIndex->genIndex();
+//     int length = max_value - min_value + 1;
+//     return llvm::ArrayType::get(type->codeGen(), length);
+// }
 
 Ast::SPL_IR LabelAst::codeGen() const
 {
@@ -713,23 +718,70 @@ llvm::Value* TypeDeclAst::codeGen() const
         logError("Type has been defined");
         return nullptr;
     }
-    if (simple_t.get())
-    {
-        if (simple_t->codeGen()) {
-            st.insertType(name, st.getType(simple_t->getName()));
-        }
-        return nullptr;
-    }
-    else if (arr_t.get())
-    {
-        auto array_type = arr_t->genType();
-        st.insertType(name, SymbolTable::NamedType(array_type, arr_t->getIndex()));
-    }
-    else {
-        auto struct_t = record_t->genType();
-        st.insertType(name, SymbolTable::NamedType(struct_t));
-    }
+    // if (simple_t.get())
+    // {
+    //     if (simple_t->codeGen()) {
+    //         st.insertType(name, st.getType(simple_t->getName()));
+    //     }
+    //     return nullptr;
+    // }
+    // else if (arr_t.get())
+    // {
+    //     auto array_type = arr_t->genType();
+    //     st.insertType(name, SymbolTable::NamedType(array_type, arr_t->getIndex()));
+    // }
+    // else {
+    //     auto struct_t = record_t->genType();
+    //     st.insertType(name, SymbolTable::NamedType(struct_t));
+    // }
+    st.insertType(name, type->genType());
     return nullptr;
 }
 
+llvm::Type* ArrayTypeAst::genType() const
+{
+    int min_value = minIndex->genIndex();
+    int max_value = maxIndex->genIndex();
+    int length = max_value - min_value + 1;
+    if (min_value == ERRORNO || max_value == ERRORNO)
+        return nullptr;
+    if (length <= 0)
+    {
+        logError("Length of array cannot be negative");
+        return nullptr;
+    }
+    auto ele_ty = memberType->genType();
+    if (!ele_ty)
+        return nullptr;
+    auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
+    auto arr_ty  = llvm::ArrayType::get(ele_ty, length);
+    st.insertArray(arr_ty, min_const);
+    return arr_ty;
+} 
+
+llvm::Type* RecordTypeAst::genType() const
+{
+    std::vector<llvm::Type*> member_ty;
+    std::vector<std::string> member_name;
+    for (auto& member: members)
+    {
+        member_ty.push_back(member.first->genType());
+        member_name.push_back(member.second);
+        if (!member_ty.back())
+        {
+            logError("Undefined type");
+            return nullptr;
+        }
+    }
+    auto struct_t = llvm::StructType::create(context, member_ty);
+    st.insertRecord(struct_t, member_name);
+    return struct_t;
+}
+
+Ast::SPL_IR CompoundAst::codeGen() const
+{
+    for (auto& stmt: stmtList)
+        stmt->codeGen();
+    return nullptr;
+}
 }

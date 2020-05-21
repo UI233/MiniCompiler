@@ -23,7 +23,7 @@ llvm::Function* createReadPrototype(llvm::LLVMContext& context, llvm::Module* mo
     return func;
 }
 
-std::vector<llvm::Value*> getWriteArgument(llvm::LLVMContext& context, std::vector<llvm::Value*>& args, llvm::Module& mod, bool writeln)
+std::vector<llvm::Value*> getWriteArgument(llvm::LLVMContext& context, const std::vector<llvm::Value*>& args, llvm::Module& mod, bool writeln)
 {
     std::string format_str = "";
     for (auto& arg: args)

@@ -11,12 +11,12 @@ int SymbolTable::getSymbolType(const std::string& name, bool current_scope) cons
             symbol_type |= VAR;
         if(tables.back().named_type.count(name))
             symbol_type |= TYPE;
-        if(tables.back().named_record.count(name))
-            symbol_type |= RECORD;
+        // if(tables.back().named_record.count(name))
+        //     symbol_type |= RECORD;
         if (tables.back().named_label.count(name))
             symbol_type |= LABEL;
-        if (tables.back().named_array.count(name))
-            symbol_type |= ARRAY;
+        // if (tables.back().named_array.count(name))
+        //     symbol_type |= ARRAY;
         if (tables.back().named_constant.count(name))
             symbol_type |= CONST;
     }
@@ -30,12 +30,12 @@ int SymbolTable::getSymbolType(const std::string& name, bool current_scope) cons
                 symbol_type |= VAR;
             if(tables[i].named_type.count(name))
                 symbol_type |= TYPE;
-            if(tables[i].named_record.count(name))
-                symbol_type |= RECORD;
+            // if(tables[i].named_record.count(name))
+            //     symbol_type |= RECORD;
             if (tables[i].named_label.count(name))
                 symbol_type |= LABEL;
-            if (tables[i].named_array.count(name))
-                symbol_type |= ARRAY;
+            // if (tables[i].named_array.count(name))
+            //     symbol_type |= ARRAY;
             if (tables[i].named_constant.count(name))
                 symbol_type |= CONST;
         }
@@ -51,33 +51,47 @@ SymbolTable::NamedFunction SymbolTable::getFuncSymbol(const std::string& name) c
             if (tables[i].named_function.count(name)) 
                 return tables[i].named_function.find(name)->second;
     }
-    else
-        return NamedFunction();
+    return NamedFunction();
 }
 
-SymbolTable::NamedStruct SymbolTable::getRecordSymbol(const std::string& name) const
+// SymbolTable::NamedStruct SymbolTable::getRecordSymbol(const std::string& name) const
+// {
+//     if (getSymbolType(name, false) | RECORD)
+//     {
+//         for (int i = tables.size() - 1; i >= 0; --i)
+//             if (tables[i].named_record.count(name)) 
+//                 return tables[i].named_record.find(name)->second;
+//     }
+//     else
+//         return std::make_pair(nullptr, std::map<std::string, int>());
+// }
+
+// SymbolTable::NamedArray SymbolTable::getArraySymbol(const std::string& name) const
+// {
+//     if (getSymbolType(name, false) | ARRAY)
+//     {
+//         for (int i = tables.size() - 1; i >= 0; --i)
+//             if (tables[i].named_array.count(name)) 
+//                 return tables[i].named_array.find(name)->second;
+//     }
+//     else
+//         return NamedArray();
+// }
+
+llvm::ConstantInt* SymbolTable::getArrayOffset(llvm::Type* arr_t) const
 {
-    if (getSymbolType(name, false) | RECORD)
-    {
-        for (int i = tables.size() - 1; i >= 0; --i)
-            if (tables[i].named_record.count(name)) 
-                return tables[i].named_record.find(name)->second;
-    }
-    else
-        return std::make_pair(nullptr, std::map<std::string, int>());
+    for (int i = tables.size() - 1; i >= 0; --i) 
+        if (tables[i].named_array.count(arr_t))
+            return tables[i].named_array.find(arr_t)->second;
+    return nullptr;
 }
 
-SymbolTable::NamedArray SymbolTable::getArraySymbol(const std::string& name) const
+std::map<std::string, int> SymbolTable::getRecordMap(llvm::Type* struct_t) const
 {
-    if (getSymbolType(name, false) | ARRAY)
-    {
-        for (int i = tables.size() - 1; i >= 0; --i)
-            if (tables[i].named_array.count(name)) 
-                return tables[i].named_array.find(name)->second;
-    }
-    else
-        return NamedArray();
-
+    for (int i = tables.size() - 1; i >= 0; --i) 
+        if (tables[i].named_record.count(struct_t))
+            return tables[i].named_record.find(struct_t)->second;
+    return std::map<std::string, int>();
 }
 
 llvm::Value* SymbolTable::getVarSymbol(const std::string& name) const
@@ -101,8 +115,7 @@ llvm::BasicBlock* SymbolTable::getLabelSymbol(const std::string& name) const
             if (tables[i].named_label.count(name)) 
                 return tables[i].named_label.find(name)->second;
     }
-    else
-       return nullptr;
+    return nullptr;
 }
 
 SymbolTable::NamedConstant SymbolTable::getConstant(const std::string& name) const
@@ -135,10 +148,10 @@ bool SymbolTable::insertVar(const std::string& name, llvm::Value* ptr)
     return true;
 }
 
-bool SymbolTable::insertRecord(const std::string& name, llvm::StructType* ty, const std::vector<std::string>& member_name)
+bool SymbolTable::insertRecord(llvm::StructType* ty, const std::vector<std::string>& member_name)
 {
-    if (hasName(name))
-        return false;
+    // if (hasName(name))
+    //     return false;
     NamedStruct member_map;
     member_map.first = ty;
     for (int i = 0; i < member_name.size(); ++i)
@@ -147,8 +160,8 @@ bool SymbolTable::insertRecord(const std::string& name, llvm::StructType* ty, co
             return false;
         member_map.second.insert(std::make_pair(member_name[i], i));
     }
-    tables.back().named_record.insert(std::make_pair(name, member_map));
-    tables.back().named_type.insert(std::make_pair(name, ty));
+    tables.back().named_record.insert(std::make_pair(ty, member_map.second));
+    // tables.back().named_type.insert(std::make_pair(ty, member_map));
     return true;
 }
 
@@ -176,16 +189,16 @@ bool SymbolTable::insertConstant(const std::string& name, llvm::Constant* value,
     return true;
 }
 
-bool SymbolTable::insertArray(const std::string& name, llvm::Value* arr, llvm::ConstantInt* offset)
+bool SymbolTable::insertArray(llvm::Type* arr_t, llvm::ConstantInt* offset)
 {
-    if (hasName(name, false))
-        return false;
-    tables.back().named_array.insert(std::make_pair(name, offset));
-    tables.back().named_variable.insert(std::make_pair(name, arr));
+    // if (hasName(name, false))
+    //     return false;
+    tables.back().named_array.insert(std::make_pair(arr_t, offset));
+    // tables.back().named_variable.insert(std::make_pair(name, arr));
     return true;
 }
 
-bool SymbolTable::insertType(const std::string& name, const NamedType& type) 
+bool SymbolTable::insertType(const std::string& name, llvm::Type* type) 
 {
     if (hasName(name, false))
         return false;
