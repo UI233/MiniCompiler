@@ -53,18 +53,18 @@ int SymbolAst::genIndex() const
 
 Ast::SPL_IR ConstAst::codeGen() const
 {
-    switch(valueType)
+    switch(type)
     {
-    BOOL:
+    case BOOL:
         return llvm::ConstantInt::get(context, llvm::APInt(1, value.valBool, false));
         break;
-    CHAR:
+    case CHAR:
         return llvm::ConstantInt::get(context, llvm::APInt(8, value.valChar, true));
         break;
-	INT:
+	case INT:
         return llvm::ConstantInt::get(context, llvm::APInt(32, value.valInt, true));
         break;
-	REAL:
+	case REAL:
         return llvm::ConstantFP::get(context, llvm::APFloat(value.valDouble));
         break;
     default:
@@ -122,31 +122,31 @@ Ast::SPL_IR MathAst::codeGen() const
     bool is_boolean = getIntTyWidth(lhs_ty) == 1 && getIntTyWidth(rhs_ty) == 1;
     switch(op)
     {
-    OP_ADD:
+    case OP_ADD:
         return is_fp ? builder.CreateFAdd(lhs, rhs, "faddtmp") : builder.CreateAdd(lhs, rhs, "addtmp");
-    OP_SUB:
+    case OP_SUB:
         return is_fp ? builder.CreateFSub(lhs, rhs, "fsubtmp") : builder.CreateSub(lhs, rhs, "subtmp");
-    OP_DIV:
+    case OP_DIV:
         return is_fp ? builder.CreateFDiv(lhs, rhs, "fdivtmp") : builder.CreateSDiv(lhs, rhs, "divtmp");
-    OP_MUL:
+    case OP_MUL:
         return is_fp ? builder.CreateFMul(lhs, rhs, "fmultmp") : builder.CreateMul(lhs, rhs, "multmp");
-    OP_MOD:
+    case OP_MOD:
         return is_fp ? builder.CreateFRem(lhs, rhs, "fmodtmp") : builder.CreateSRem(lhs, rhs, "remtmp");
-    OP_GE:
-        return is_fp ? builder.CreateFRem(lhs, rhs, "fmodtmp") : builder.CreateSRem(lhs, rhs, "remtmp");
-    OP_GT:
+    case OP_GE:
+        return is_fp ? builder.CreateFCmpOGE(lhs, rhs, "fgetmp") : builder.CreateICmpSGE(lhs, rhs, "remtmp");
+    case OP_GT:
         return is_fp ? builder.CreateFCmpOGT(lhs, rhs, "fgttmp") : builder.CreateICmpSGT(lhs, rhs, "gttmp");
-    OP_LE:
+    case OP_LE:
         return is_fp ? builder.CreateFCmpOLE(lhs, rhs, "fletmp") : builder.CreateICmpSLE(lhs, rhs, "letmp");
-    OP_LT:
+    case OP_LT:
         return is_fp ? builder.CreateFCmpOLT(lhs, rhs, "flttmp") : builder.CreateICmpSLT(lhs, rhs, "lttmp");
-    OP_EQUAL:
+    case OP_EQ:
         return is_fp ? builder.CreateFCmpOEQ(lhs, rhs, "feqtmp") : builder.CreateICmpEQ(lhs, rhs, "eqtmp");
-    OP_UNEQUAL:
+    case OP_NE:
         return is_fp ? builder.CreateFCmpONE(lhs, rhs, "funetmp") : builder.CreateICmpNE(lhs, rhs, "remtmp");
-    OP_OR:
+    case OP_OR:
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
-    OP_AND:
+    case OP_AND:
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateAnd(lhs, rhs, "ortmp");
     default:
         return nullptr;
@@ -160,7 +160,7 @@ Ast::SPL_IR SymbolAst::genPtr() const
 
 Ast::SPL_IR SymbolAst::codeGen() const
 {
-    if (st.getSymbolType(name) | SymbolTable::CONST)
+    if (st.getSymbolType(name, false) & SymbolTable::CONST)
         return st.getConstant(name).first;
     else {
         auto ptr = genPtr();
@@ -175,21 +175,22 @@ Ast::SPL_IR SymbolAst::codeGen() const
 
 Ast::SPL_IR ArrayAst::genPtr() const
 {
-    llvm::Value* array = st.getVarSymbol(arrayName);    
-    if (!array->getType()->isArrayTy())
+    llvm::Value* array = sym->genPtr();
+    if (!array->getType()->getContainedType(0)->isArrayTy())
     {
         logError("Variable is not array type");
         return nullptr;
     }
     llvm::Value* index = exp_index->codeGen();
     llvm::Value* offset = st.getArrayOffset(array->getType());
-    llvm::Value* offset_index = builder.CreateAdd(index, offset);
+    llvm::Value* offset_index = builder.CreateSub(index, offset);
     if (!index->getType()->isIntegerTy())
     {
         logError("Non-integer index");
         return nullptr;
     }
-    auto element_ptr = builder.CreateInBoundsGEP(array, offset_index);
+    auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+    auto element_ptr = builder.CreateInBoundsGEP(array, {zero, offset_index});
     return element_ptr;
 }
 
@@ -214,7 +215,9 @@ Ast::SPL_IR DotAst::genPtr() const
         logError("Record doesn't have field " + field);
         return nullptr;
     }
-    return builder.CreateInBoundsGEP(record_ptr, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), struct_mem[field]));
+    auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+    auto offset = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), struct_mem[field]);
+    return builder.CreateInBoundsGEP(record_ptr, {zero, offset});
 }
 
 Ast::SPL_IR DotAst::codeGen() const
@@ -236,6 +239,8 @@ Ast::SPL_IR FuncAst::codeGen() const
     {
         func.second = std::vector<bool>(argList.size(), false);
     }
+    if (funcName == "read")
+        func.second = std::vector<bool>(1, false);
     if (argList.size() != func.second.size())
     {
         logError("Wrong number of parameters passed");
@@ -282,22 +287,21 @@ Ast::SPL_IR FuncAst::codeGen() const
 
 Ast::SPL_IR AssignAst::codeGen() const
 {
-    auto variable = lhs->codeGen();
+    auto var_ptr = lhs -> genPtr();
     auto value = rhs->codeGen();
-    if (variable == nullptr || value == nullptr)
+    if (var_ptr == nullptr || value == nullptr)
         return nullptr;
     if (!dynamic_cast<DotAst*>(lhs.get()) && !dynamic_cast<SymbolAst*>(lhs.get()) && !dynamic_cast<ArrayAst*>(lhs.get()))
     {
         logError("Right value cannot be assigned");
         return nullptr;
     }
-    if (variable->getType() != value->getType())
+    if (var_ptr->getType()->getContainedType(0) != value->getType())
     {
         logError("Type unmatched");
         return nullptr;
     }
     
-    auto var_ptr = lhs -> genPtr();
     return builder.CreateStore(value, var_ptr);
 }
 
@@ -312,8 +316,8 @@ llvm::Type* SimpleTypeAst::genType() const
         return llvm::Type::getInt32Ty(context);
     if (name == "char")
         return llvm::Type::getInt8Ty(context);
-    if (name == "boolean")
-        return llvm::Type::getInt1Ty(context);
+    if (name == "real")
+        return llvm::Type::getDoubleTy(context);
     logError("Undefined type");
     return nullptr;
 }
@@ -461,23 +465,24 @@ Ast::SPL_IR ConstDeclAst::codeGen() const
 
     switch(type)
     {
-    REAL:
+    case REAL:
         st.insertConstant(name, llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), const_value.valDouble), const_value);
         return nullptr;
-    BOOL:
+    case BOOL:
         st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), const_value.valBool), const_value);
         return nullptr;
-    CHAR:
+    case CHAR:
         st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), const_value.valChar), const_value);
         return nullptr;
-    INT:
+    case INT:
         st.insertConstant(name, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), const_value.valInt), const_value);
         return nullptr;
     default:
+        std::cerr << INT << std::endl;
+        std::cerr << type << std::endl;
         logError("This type cannot be constant");
         return nullptr;
     }
-    return nullptr;
 }
 
 Ast::SPL_IR ArrayDeclAst::codeGen() const
@@ -613,12 +618,12 @@ Ast::SPL_IR ForAst::codeGen() const
     builder.SetInsertPoint(initbb);
     auto loopv_ptr = loop_var->genPtr();
     auto loopv = init->codeGen();
-    if (!loopv->getType()->isIntegerTy() || !loopv_ptr->getType()->isIntegerTy())
+    if (!loopv->getType()->isIntegerTy() || !loopv_ptr->getType()->getContainedType(0)->isIntegerTy())
     {
         logError("Loop variable should be integer");
         return nullptr;
     }
-    builder.CreateStore(loopv, loopv_ptr);
+    auto loop_var = builder.CreateStore(loopv, loopv_ptr);
     auto endv = end->codeGen();
     if (!endv)
         return nullptr;

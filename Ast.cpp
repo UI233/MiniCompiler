@@ -185,7 +185,7 @@ SymbolAst::~SymbolAst() {
 }
 
 
-ArrayAst::ArrayAst(SymbolAst* sym_, ExprAst* exp_) :
+ArrayAst::ArrayAst(VarAst* sym_, ExprAst* exp_) :
 	sym(sym_), exp_index(exp_) {
 	this->nodeType = AST_ARRAY;
 }
@@ -399,7 +399,7 @@ FuncAst::~FuncAst() {
 }
 
 
-DotAst::DotAst(SymbolAst* record_, std::string& field_) :
+DotAst::DotAst(VarAst* record_, std::string& field_) :
 	record(record_), field(field_) {
 	this->nodeType = AST_DOT;
 }

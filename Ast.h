@@ -105,11 +105,10 @@ namespace SPL {
 	class ArrayAst final : public VarAst {
 	protected:
 		//void print(void);
-		std::string arrayName;
-		std::unique_ptr<SymbolAst> sym;
+		std::unique_ptr<VarAst> sym;
 		std::unique_ptr<ExprAst> exp_index;
 	public:
-		ArrayAst(SymbolAst* sym_, ExprAst* exp_);
+		ArrayAst(VarAst* sym_, ExprAst* exp_);
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		~ArrayAst();
@@ -322,10 +321,10 @@ namespace SPL {
 
 	class DotAst final :public VarAst {
 	protected:
-		std::unique_ptr<SymbolAst> record;
+		std::unique_ptr<VarAst> record;
 		std::string field;
 	public:
-		DotAst(SymbolAst* record_, std::string& field_);
+		DotAst(VarAst* record_, std::string& field_);
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		~DotAst();
