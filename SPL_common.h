@@ -1,6 +1,9 @@
 #ifndef _SPL_COMMON_H
 #define _SPL_COMMON_H
 
+
+
+
 enum SPL_TYPE {
 	BOOL = 1,
 	CHAR,
@@ -74,7 +77,15 @@ union valueUnion {
 
 
 enum SYS_FUNC_ID {
-	SQRT = 1,
+	ABS = 0,
+	CHR,
+	ODD,
+	ORD,
+	PRED,
+	SQR,
+	SQRT,
+	SUCC,
+	READ,
 	WRITE,
 	WRITELN
 };

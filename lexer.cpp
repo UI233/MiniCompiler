@@ -1194,7 +1194,7 @@ YY_RULE_SETUP
 case 60:
 YY_RULE_SETUP
 #line 98 "lexer.l"
-{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_PROCEDURE); }
+{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_FUNCTION); }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
@@ -1204,7 +1204,7 @@ YY_RULE_SETUP
 case 62:
 YY_RULE_SETUP
 #line 100 "lexer.l"
-{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_READ); }
+{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_FUNCTION); }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP

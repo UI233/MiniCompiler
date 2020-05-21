@@ -15,6 +15,9 @@
     std::string minus_string("-");
     std::string array_string("array:");
     int INT_MAX_SPL = 2147483647;
+    std::string sys_funct[] = {"abs","chr","odd","ord","pred","sqr","sqrt","succ","read","write","writeln"};
+    std::vector<std::string> SYS_FUNC_NAME(sys_funct, sys_funct+sizeof(sys_funct)/sizeof(sys_funct[1]));
+    
 %}
 
 %union{
@@ -137,12 +140,20 @@
 %type <vecstrPtr> val_para_list
 %type <gotoast> goto_stmt
 %type <vecexprastPtr> args_list
+%type <compoundast> program
 
 
-
-%start routine
+%start program
 
 %%
+
+program : program_head routine TOKEN_DOT {
+	$$ = $<compoundast>2;
+}
+
+program_head : TOKEN_PROGRAM TOKEN_ID TOKEN_SEMI {
+	;
+}
 
 routine : routine_head routine_body {
 //TODO
@@ -422,10 +433,26 @@ non_label_stmt:assign_stmt {
 	$$ = $<caseast>1;
 } | goto_stmt {
 	$$ = $<gotoast>1;
+} | TOKEN_ID TOKEN_LP args_list TOKEN_RP {
+	$<stmtast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
+} | TOKEN_SYS_FUNCTION TOKEN_LP args_list TOKEN_RP {
+	SYS_FUNC_ID sys_func_id = (SYS_FUNC_ID)0;
+	std::string sysname = *$<stringPtr>1;
+	for (int i=0;i<SYS_FUNC_NAME.size();i++) {
+		if (sysname == SYS_FUNC_NAME[i]) {
+			sys_func_id = (SYS_FUNC_ID)i;
+			break;
+		}
+	}
+	$<stmtast>$ = new SPL::SysFuncAst(sys_func_id, *$<vecexprastPtr>3);
 }
 
 assign_stmt: TOKEN_ID TOKEN_ASSIGN expression {
 	$$ = new SPL::AssignAst(new SPL::SymbolAst(*($<stringPtr>1)), $<exprast>3 );
+} | TOKEN_ID TOKEN_LB expression TOKEN_RB TOKEN_ASSIGN expression {
+	$$ = new SPL::AssignAst(new SPL::ArrayAst(new SPL::SymbolAst(*($<stringPtr>1)), $<exprast>3), $<exprast>6 );	
+} | TOKEN_ID TOKEN_DOT TOKEN_ID TOKEN_ASSIGN expression {
+	$$ = new SPL::AssignAst(new SPL::DotAst(new SPL::SymbolAst(*($<stringPtr>1)), *($<stringPtr>3) ), $<exprast>5 );
 }
 
 if_stmt: TOKEN_IF expression TOKEN_THEN stmt else_clause {
@@ -530,6 +557,16 @@ factor: const_ast {
 	$<exprast>$ = new SPL::MathAst(OP_NOT,$<exprast>2, nullptr);
 } | TOKEN_ID TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
+} | TOKEN_SYS_FUNCTION TOKEN_LP args_list TOKEN_RP {
+	SYS_FUNC_ID sys_func_id = (SYS_FUNC_ID)0;
+	std::string sysname = *$<stringPtr>1;
+	for (int i=0;i<SYS_FUNC_NAME.size();i++) {
+		if (sysname == SYS_FUNC_NAME[i]) {
+			sys_func_id = (SYS_FUNC_ID)i;
+			break;
+		}
+	}
+	$<exprast>$ = new SPL::SysFuncAst(sys_func_id, *$<vecexprastPtr>3);
 }
 
 args_list: args_list TOKEN_COMMA expression {
