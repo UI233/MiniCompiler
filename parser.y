@@ -15,8 +15,6 @@
     std::string minus_string("-");
     std::string array_string("array:");
     int INT_MAX_SPL = 2147483647;
-    std::string sys_funct[] = {"abs","chr","odd","ord","pred","sqr","sqrt","succ","read","write","writeln"};
-    std::vector<std::string> SYS_FUNC_NAME(sys_funct, sys_funct+sizeof(sys_funct)/sizeof(sys_funct[1]));
     
 %}
 
