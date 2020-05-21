@@ -4,11 +4,12 @@ const
 	UPPERBOUND = 1000;
 type
 	double = real;
+	int = integer;
 var
 	a,b,i,sumval : integer;
 	student_book : array [0..100] of student;
 
-function sum ( b : double ) :  double;
+function sum ( b : int ) :  double;
 	
 	var
 		i:integer;
@@ -19,7 +20,7 @@ function sum ( b : double ) :  double;
 			b := UPPERBOUND ;
 		i:=0;
 		sum:=0;
-		for i:= a to b do
+		for i:= 1 to b do
 		begin
 			term[i] := 1.0/sqr(i);
 			sum:=sum+i;

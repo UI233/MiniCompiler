@@ -4,6 +4,9 @@ Const Decl Ast-name:UPPERBOUND	 type:3
 Type Decl Ast-name:double
 Type Decl Ast-type:Simple Type Ast-name:
 real
+Type Decl Ast-name:int
+Type Decl Ast-type:Simple Type Ast-name:
+integer
 Simple var Decl Ast-name:a
 Simple var Decl Ast-type:Simple Type Ast-name:
 integer
@@ -27,7 +30,7 @@ Const Ast:INT:100
 Func Decl Ast-name:sum
 Para:
 non-Var:bSimple Type Ast-name:
-double
+int
 Compound Ast:
 Simple var Decl Ast-name:i
 Simple var Decl Ast-type:Simple Type Ast-name:
@@ -63,7 +66,7 @@ RhsExprAst:Const Ast:INT:0
 For AST-loopvar:
 SymbolAst:i
 For AST_INIT:
-SymbolAst:a
+Const Ast:INT:1
 For AST_END:
 SymbolAst:b
 For-DIR:1
