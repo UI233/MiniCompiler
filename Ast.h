@@ -35,11 +35,11 @@ namespace SPL {
 	public:
 		SPL_TYPE valueType;
 		using SPL_IR = void;
-		ExprAst();
 		//get Ast's value (if has)
 		//virtual valueUnion getValue() = 0;
 		virtual void __show(std::fstream& fout) = 0;
-		virtual ~ExprAst() = 0;
+		virtual ~ExprAst() = default;
+		ExprAst() = default;
 	};
 
 	class IndexAst {

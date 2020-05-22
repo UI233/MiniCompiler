@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     SPL::Ast* root = program;
 	std::fstream fout;
 	fout.open("output",std::ios::out);
-	root->__show(fout);
+	// root->__show(fout);
 	/* Create the top level interpreter function to call as entry */
 	genIR(libroot, root, llvm::errs());
 /*

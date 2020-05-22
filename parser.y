@@ -162,7 +162,7 @@ routine : global_routine_head routine_body {
 	$$ = $<compoundast>1;
 	$$ -> merge($<compoundast>2);
 	program = $$;
-	std::cout<<lineno<<std::endl;
+	// std::cout<<lineno<<std::endl;
 	//program = $$;
 }
 
@@ -187,7 +187,7 @@ routine_head: const_part type_part var_part routine_part{
 
 const_part: TOKEN_CONST const_expr_list {
 	$$ = $<compoundast>2;
-	std::cout<<lineno<<std::endl;
+	// std::cout<<lineno<<std::endl;
 }
 | {$$ = nullptr;}
 
@@ -509,7 +509,7 @@ case_expr_list: case_expr_list case_expr {
 case_expr: const_ast TOKEN_COLON stmt TOKEN_SEMI {
 	$$ = new SPL::CaseUnit($<exprast>1, $<stmtast>3);
 } | TOKEN_ID TOKEN_COLON stmt TOKEN_SEMI {
-	$$ = new SPL::CaseUnit($<exprast>1, $<stmtast>3);
+	$$ = new SPL::CaseUnit(new SPL::SymbolAst(*$<stringPtr>1), $<stmtast>3);
 }
 
 expression: expression TOKEN_GE expr {

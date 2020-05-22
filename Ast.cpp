@@ -25,13 +25,13 @@ Ast::~Ast() {
 	;
 }
 
-ExprAst::ExprAst() {
-	;
-}
+// ExprAst::ExprAst() {
+// 	;
+// }
 
-ExprAst::~ExprAst() {
-	;
-}
+// ExprAst::~ExprAst() {
+// 	;
+// }
 StmtAst::StmtAst() {
 	;
 }
