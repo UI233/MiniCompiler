@@ -14,7 +14,8 @@ namespace SPL {
 
 
 	class Ast {
-
+	private:
+		int lineNo;
 	public:
 		using SPL_IR = llvm::Value*;
 		AST_NODE_TYPE nodeType;
@@ -23,6 +24,9 @@ namespace SPL {
 		//virtual valueUnion getValue() = 0;
 		//the function is for debug
 		virtual void __show(std::fstream& fout) = 0;
+
+		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
+		int getLineNo() { return this->lineNo; };
 		virtual ~Ast() = 0;
 		virtual SPL_IR codeGen() const = 0;
 	};
@@ -120,12 +124,9 @@ namespace SPL {
 		// StmtAst is Ast those has not value.
 	{
 		//the function is for debug
-	private:
-		int lineNo;
+
 	public:
 		StmtAst();
-		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
-		int getLineNo() { return this->lineNo; };
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~StmtAst() = 0;
 	};
@@ -276,7 +277,7 @@ namespace SPL {
 		Ast::SPL_IR codeGen() const override;
 	};
 
-	class TypeAst
+	class TypeAst: public Ast
 	{
 	
 	public:

@@ -187,6 +187,7 @@ routine_head: const_part type_part var_part routine_part{
 
 const_part: TOKEN_CONST const_expr_list {
 	$$ = $<compoundast>2;
+	$$ -> setLineNo(yylineno);
 	// std::cout<<yylineno<<std::endl;
 }
 | {$$ = nullptr;}
@@ -194,6 +195,7 @@ const_part: TOKEN_CONST const_expr_list {
 const_expr_list:const_expr_list TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 	SPL::ConstDeclAst* t = new SPL::ConstDeclAst(*$<stringPtr>2, $<constast>4->getType(), $<constast>4->getValue());
 	$$ = $<compoundast>1;
+	t -> setLineNo(yylineno);
 	$$->addStmt(t);
 }
 | TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
@@ -207,25 +209,29 @@ const_expr_list:const_expr_list TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 const_ast: TOKEN_INTEGER_LITERAL {
 	std::string* t = $<stringPtr>1;
 	$$ = new SPL::ConstAst(std::stoi(*t));
-
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_REAL_LITERAL {
 	std::string* t = $<stringPtr>1;
 	$$ = new SPL::ConstAst(std::stod(*t));
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_CHAR_LITERAL {
 	std::string* t = $<stringPtr>1;
 	$$ = new SPL::ConstAst((*t)[1]);
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_SYS_CONST {
 	std::string* t = $<stringPtr>1;
 	if (*t == maxint_string)  $$ = new SPL::ConstAst(INT_MAX_SPL);
 	else if (*t == true_string) $$ = new SPL::ConstAst(true);
 	else if (*t == false_string) $$ = new SPL::ConstAst(false);
+	$$-> setLineNo(yylineno);
 }
 
 type_part: TOKEN_TYPE type_decl_list {
 	$$ = $<compoundast>2;
+	$$-> setLineNo(yylineno);
 }
 | {$$ = nullptr; }
 
@@ -259,21 +265,27 @@ type_decl: simple_type_decl {
 simple_type_decl: TOKEN_SYS_TYPE {
 	std::string t = *($<stringPtr>1);
 	$$ = new SPL::SimpleTypeAst(t);
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_ID {
 	$$ = new SPL::SimpleTypeAst(*($<stringPtr>1));
+	$$-> setLineNo(yylineno);
 }
 | const_ast TOKEN_DOTDOT const_ast {
 	$$ = new SPL::SimpleTypeAst(std::to_string(($<constast>1)->getValue().valInt)+dotdot_string+std::to_string(($<constast>3)->getValue().valInt));
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_SUB const_ast TOKEN_DOTDOT const_ast {
 	$$ = new SPL::SimpleTypeAst(minus_string+std::to_string(($<constast>2)->getValue().valInt)+dotdot_string+std::to_string(($<constast>4)->getValue().valInt));
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_SUB const_ast TOKEN_DOTDOT TOKEN_SUB const_ast {
 	$$ = new SPL::SimpleTypeAst(minus_string+std::to_string(($<constast>2)->getValue().valInt)+dotdot_string+minus_string+std::to_string(($<constast>5)->getValue().valInt));
+	$$-> setLineNo(yylineno);
 }
 | TOKEN_ID TOKEN_DOTDOT TOKEN_ID {
 	$$ = new SPL::SimpleTypeAst(*($<stringPtr>1)+dotdot_string+*($<stringPtr>3));
+	$$-> setLineNo(yylineno);
 }
 
 array_type_decl: TOKEN_ARRAY TOKEN_LB simple_type_decl TOKEN_RB TOKEN_OF type_decl {
@@ -294,22 +306,27 @@ array_type_decl: TOKEN_ARRAY TOKEN_LB simple_type_decl TOKEN_RB TOKEN_OF type_de
 		maxIndex_ = new SPL::ConstAst(std::stoi(maxstr));
 	}
 	$$ = new SPL::ArrayTypeAst( $<typeast>6 , minIndex_, maxIndex_);
+	$$-> setLineNo(yylineno);
 }
 
 record_type_decl: TOKEN_RECORD field_decl_list TOKEN_END {
 	$$ = $<recordtypeast>2;
+	$$-> setLineNo(yylineno);
 }
 
 field_decl_list: field_decl_list field_decl {
 	$$ = $1;
 	$$ -> addMember(*$<recordunit>2);
+	$$-> setLineNo(yylineno);
 } | field_decl {
 	$$ = new SPL::RecordTypeAst();
 	$$ -> addMember(*$<recordunit>1);
+	$$-> setLineNo(yylineno);
 }
 
 field_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 	$$ = new std::pair<SPL::TypeAst*, std::vector<std::string> > ($<typeast>3, *$<vecstrPtr>1);
+	$$-> setLineNo(yylineno);
 }
 
 name_list: name_list TOKEN_COMMA TOKEN_ID {
@@ -324,13 +341,16 @@ name_list: name_list TOKEN_COMMA TOKEN_ID {
 
 var_part: TOKEN_VAR var_decl_list {
 	$$ = $<compoundast>2;
+	$$-> setLineNo(yylineno);
 } | {$$ = nullptr;}
 
 var_decl_list: var_decl_list var_decl {
 	$$ = $1;
+	$<compoundast>2 -> setLineNo(yylineno);
 	$$->merge($<compoundast>2);
 } | var_decl {
 	$$ = $<compoundast>1;
+	$$-> setLineNo(yylineno);
 }
 
 var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
@@ -514,66 +534,92 @@ case_expr: const_ast TOKEN_COLON stmt TOKEN_SEMI {
 
 expression: expression TOKEN_GE expr {
 	$$ = new SPL::MathAst(OP_GE,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expression TOKEN_GT expr {
 	$$ = new SPL::MathAst(OP_GT,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expression TOKEN_LE expr {
 	$$ = new SPL::MathAst(OP_LE,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expression TOKEN_LT expr {
 	$$ = new SPL::MathAst(OP_LT,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expression TOKEN_EQ expr {
 	$$ = new SPL::MathAst(OP_EQ,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expression TOKEN_NE expr {
 	$$ = new SPL::MathAst(OP_NE,$<exprast>1,$<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expr {
 	$$ = $<exprast>1;
+	$$-> setLineNo(yylineno);
 }
 
 expr: expr TOKEN_ADD term {
 	$$ = new SPL::MathAst(OP_ADD,$<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expr TOKEN_SUB term {
 	$$ = new SPL::MathAst(OP_SUB,$<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | expr TOKEN_OR term {
 	$$ = new SPL::MathAst(OP_OR,$<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | term {
 	$$ = $<exprast>1;
+	$$-> setLineNo(yylineno);
 }
 
 term: term TOKEN_MUL factor {
 	$$ = new SPL::MathAst(OP_MUL, $<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | term TOKEN_DIV factor {
 	$$ = new SPL::MathAst(OP_DIV, $<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | term TOKEN_MOD factor {
 	$$ = new SPL::MathAst(OP_MOD, $<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | term TOKEN_AND factor {
 	$$ = new SPL::MathAst(OP_AND, $<exprast>1, $<exprast>3);
+	$$-> setLineNo(yylineno);
 } | factor {
 	$$ = $<exprast>1;
+	$$-> setLineNo(yylineno);
 }
 
 
 factor:  TOKEN_SUB fact {
 	$<exprast>$ = new SPL::MathAst(OP_NG,$<exprast>2, nullptr);
+	$$-> setLineNo(yylineno);
 } |  TOKEN_NOT fact {
 	$<exprast>$ = new SPL::MathAst(OP_NOT,$<exprast>2, nullptr);
+	$$-> setLineNo(yylineno);
 } | fact {
 	$<exprast>$ = $<varast>1;
+	$$-> setLineNo(yylineno);
 } |  const_ast {
 	$<exprast>$ = $<constast>1;
+	$$-> setLineNo(yylineno);
 } | TOKEN_ID TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
+	$$-> setLineNo(yylineno);
 } | TOKEN_SYS_FUNCTION TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
+	$$-> setLineNo(yylineno);
 } | TOKEN_LP expression TOKEN_RP {
 	$<exprast>$ = $<exprast>2;
+	$$-> setLineNo(yylineno);
 } 
 
 
 fact : TOKEN_ID {
 	$<varast>$ = new SPL::SymbolAst(*$<stringPtr>1);
+	$$-> setLineNo(yylineno);
 } | fact TOKEN_DOT TOKEN_ID {
 	$<varast>$ = new SPL::DotAst($<varast>1, *$<stringPtr>3);
+	$$-> setLineNo(yylineno);
 } | fact TOKEN_LB expression TOKEN_RB {
 	$<varast>$ = new SPL::ArrayAst($<varast>1 , $<exprast>3);
+	$$-> setLineNo(yylineno);
 } 
 
 args_list: args_list TOKEN_COMMA expression {
