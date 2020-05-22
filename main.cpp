@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <fstream>
-#include "Ast.h"
+#include "CodeGen.h"
 #include "parser.hpp"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
@@ -20,32 +20,29 @@ extern int yyparse();
 
 std::ofstream astOut;
 
-extern llvm::LLVMContext context;
-extern llvm::IRBuilder<> builder;
-extern llvm::Module module;
-
 int main(int argc, char **argv) {
     std::string sourcePath;
-    auto sourceFile = sourcePath + argv[1];
-    std::cout << "input file: " << sourceFile << std::endl;
-    yyin = fopen(sourceFile.c_str(), "r");
+	std::string sourceFile;
+	// read lib function
+	yyin = fopen("lib.spl", "r");
     yyparse();
-
+	fclose(yyin);
+    SPL::Ast* libroot = program;
+	// read program
+	if (argc > 1) {
+		sourceFile = sourcePath + argv[1];
+		yyin = fopen(sourceFile.c_str(), "r");
+	}
+	else
+		yyin = stdin;
+    yyparse();
+	fclose(yyin);
     SPL::Ast* root = program;
 	std::fstream fout;
 	fout.open("output",std::ios::out);
 	root->__show(fout);
 	/* Create the top level interpreter function to call as entry */
-	std::vector<llvm::Type *> argTypes;
-	llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), makeArrayRef(argTypes),
-														false);
-	// change GlobalValue::InternalLinkage into ExternalLinkage
-	llvm::Function *mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", &module);
-	llvm::BasicBlock *bblock = llvm::BasicBlock::Create(context, "entry", mainFunction, nullptr);
-	builder.SetInsertPoint(bblock);
-	root->codeGen(); 
-	module.print(llvm::errs(), nullptr);
-	builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+	genIR(libroot, root, llvm::errs());
 /*
 	root = program_type_part;
 	root->__show(fout);

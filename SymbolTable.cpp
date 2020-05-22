@@ -45,7 +45,7 @@ int SymbolTable::getSymbolType(const std::string& name, bool current_scope) cons
 
 SymbolTable::NamedFunction SymbolTable::getFuncSymbol(const std::string& name) const
 {
-    if (getSymbolType(name, false) | FUNCTION)
+    if (getSymbolType(name, false) & FUNCTION)
     {
         for (int i = tables.size() - 1; i >= 0; --i)
             if (tables[i].named_function.count(name)) 
@@ -90,26 +90,27 @@ std::map<std::string, int> SymbolTable::getRecordMap(llvm::Type* struct_t) const
 {
     for (int i = tables.size() - 1; i >= 0; --i) 
         if (tables[i].named_record.count(struct_t))
-            return tables[i].named_record.find(struct_t)->second;
+            return tables.back().named_record.find(struct_t)->second;
     return std::map<std::string, int>();
 }
 
 llvm::Value* SymbolTable::getVarSymbol(const std::string& name) const
 {
-    if (getSymbolType(name, false) | VAR)
-    {
-        for (int i = tables.size() - 1; i >= 0; --i)
-            if (tables[i].named_variable.count(name)) 
-                return tables[i].named_variable.find(name)->second;
-    }
-    else if (getSymbolType(name, true) | FUNCTION)
+    if (getSymbolType(name, true) & FUNCTION)
         return tables.back().named_variable.find("0" + name)->second;
+    else if (getSymbolType(name, true) & VAR)
+    {
+        return tables.back().named_variable.find(name)->second;
+        // for (int i = tables.size() - 1; i >= 0; --i)
+        //     if (tables[i].named_variable.count(name)) 
+        //         return tables[i].named_variable.find(name)->second;
+    }
     return nullptr;
 }
 
 llvm::BasicBlock* SymbolTable::getLabelSymbol(const std::string& name) const
 {
-    if (getSymbolType(name) | LABEL)
+    if (getSymbolType(name) & LABEL)
     {
         for (int i = tables.size() - 1; i >= 0; --i)
             if (tables[i].named_label.count(name)) 
@@ -120,7 +121,7 @@ llvm::BasicBlock* SymbolTable::getLabelSymbol(const std::string& name) const
 
 SymbolTable::NamedConstant SymbolTable::getConstant(const std::string& name) const
 {
-    if (getSymbolType(name, false) | CONST)
+    if (getSymbolType(name, false) & CONST)
     {
         for (int i = tables.size() - 1; i >= 0; --i)
             if (tables[i].named_constant.count(name)) 
@@ -131,7 +132,7 @@ SymbolTable::NamedConstant SymbolTable::getConstant(const std::string& name) con
 
 SymbolTable::NamedType SymbolTable::getType(const std::string& name) const
 {
-    if (getSymbolType(name, false) | TYPE)
+    if (getSymbolType(name, false) & TYPE)
     {
         for (int i = tables.size() - 1; i >= 0; --i)
             if (tables[i].named_type.count(name)) 

@@ -41,7 +41,7 @@ std::vector<llvm::Value*> getWriteArgument(llvm::LLVMContext& context, const std
     auto printf_format_const = llvm::ConstantDataArray::getString(context, format_str, true);
     auto format_string_var = new llvm::GlobalVariable(mod,
     llvm::ArrayType::get(llvm::IntegerType::get(context, 8),
-                        format_str.size() + 1), true,
+                        format_str.length() + 1), true,
     llvm::GlobalValue::PrivateLinkage, printf_format_const);
     auto zero = llvm::Constant::getNullValue(llvm::IntegerType::getInt32Ty(context));
     std::vector<llvm::Constant *> indices;
@@ -63,7 +63,7 @@ std::vector<llvm::Value*> getReadArgument(llvm::LLVMContext& context, const std:
     std::string format_str = "";
     for (auto& ty: args_type)
     {
-        if (ty->isPointerTy() || ty->isIntegerTy(1))
+        if (ty->isIntegerTy(32) || ty->isIntegerTy(1))
             format_str += "%d";
         else if (ty->isIntegerTy(8))
             format_str += "%c";
@@ -74,7 +74,7 @@ std::vector<llvm::Value*> getReadArgument(llvm::LLVMContext& context, const std:
     auto scanf_format_const = llvm::ConstantDataArray::getString(context, format_str, true);
     auto format_string_var = new llvm::GlobalVariable(mod,
     llvm::ArrayType::get(llvm::IntegerType::get(context, 8),
-                        format_str.size() + 1), true,
+                        format_str.length() + 1), true,
     llvm::GlobalValue::PrivateLinkage, scanf_format_const);
     auto zero = llvm::Constant::getNullValue(llvm::IntegerType::getInt32Ty(context));
     std::vector<llvm::Constant *> indices;

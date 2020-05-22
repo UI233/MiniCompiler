@@ -1,3 +1,4 @@
+#include "CodeGen.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
@@ -9,7 +10,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
-#include "Ast.h"
 #include "SymbolTable.h"
 #include "SystemFunc.h"
 
@@ -28,10 +28,7 @@ void logError(const std::string& err)
 
 int getIntTyWidth(llvm::Type* ty) 
 {
-    return ty->isIntegerTy(1) ? 1 : (
-        ty->isIntegerTy(8) ? 8 :
-        (ty->isIntegerTy(32) ? 32 : -1)
-    );
+   return ty->isIntegerTy() ? ty->getScalarSizeInBits() : -1;
 }
 
 int ConstAst::genIndex() const
@@ -88,7 +85,7 @@ Ast::SPL_IR MathAst::codeGen() const
     auto rhs = rchild->codeGen();
     if (!lhs || !rhs)
         return nullptr;
-    llvm::Type* lhs_ty = lhs->getType();
+    auto lhs_ty = lhs->getType();
     auto rhs_ty = rhs->getType();
     if (!isSupportedType(lhs_ty) || !isSupportedType(rhs_ty))
     {
@@ -97,19 +94,19 @@ Ast::SPL_IR MathAst::codeGen() const
     }
     if (lhs_ty != rhs_ty)
     {
-        if (lhs_ty->isDoubleTy())
-            rhs = builder.CreateFPCast(rhs, lhs_ty, "rcasttmp");
+        if (lhs_ty->isDoubleTy()) 
+            rhs = builder.CreateSIToFP(rhs, lhs_ty, "rcasttmp");
         else if (rhs_ty->isDoubleTy())
-            lhs = builder.CreateFPCast(lhs, rhs_ty, "lcasttmp");
+            lhs = builder.CreateSIToFP(lhs, rhs_ty, "lcasttmp");
         else if(lhs_ty->isIntegerTy() && rhs_ty->isIntegerTy())
         {
             int lhs_width = getIntTyWidth(lhs_ty), rhs_width = getIntTyWidth(rhs_ty);
             if (lhs_width < 0 || rhs_width < 0)
                 throw "wrong type";
             if (lhs_width > rhs_width)
-                rhs = builder.CreateIntCast(rhs, lhs->getType(), true);
+                rhs = builder.CreateSExt(rhs, lhs_ty, "");
             else if (rhs_width > lhs_width)
-                lhs = builder.CreateIntCast(lhs, rhs->getType(), true);
+                lhs = builder.CreateSExt(lhs, rhs->getType(), "");
             else 
                 throw "same type";
         }
@@ -118,8 +115,9 @@ Ast::SPL_IR MathAst::codeGen() const
             throw "unsupported branch";
         }
     }
+    lhs_ty = lhs->getType();
+    rhs_ty = rhs->getType();
     bool is_fp = lhs_ty->isDoubleTy() && rhs_ty->isDoubleTy();
-    bool is_boolean = getIntTyWidth(lhs_ty) == 1 && getIntTyWidth(rhs_ty) == 1;
     switch(op)
     {
     case OP_ADD:
@@ -182,7 +180,7 @@ Ast::SPL_IR ArrayAst::genPtr() const
         return nullptr;
     }
     llvm::Value* index = exp_index->codeGen();
-    llvm::Value* offset = st.getArrayOffset(array->getType());
+    llvm::Value* offset = st.getArrayOffset(array->getType()->getContainedType(0));
     llvm::Value* offset_index = builder.CreateSub(index, offset);
     if (!index->getType()->isIntegerTy())
     {
@@ -209,7 +207,7 @@ Ast::SPL_IR ArrayAst::codeGen() const
 Ast::SPL_IR DotAst::genPtr() const
 {
     auto record_ptr = record->genPtr();
-    auto struct_mem = st.getRecordMap(record->codeGen()->getType());
+    auto struct_mem = st.getRecordMap(record_ptr->getType()->getContainedType(0));
     if (!struct_mem.count(field))
     {
         logError("Record doesn't have field " + field);
@@ -235,12 +233,17 @@ Ast::SPL_IR DotAst::codeGen() const
 Ast::SPL_IR FuncAst::codeGen() const
 {
     auto func = st.getFuncSymbol(funcName);
+    if (!func.first)
+    {
+        logError("Undefined function");
+        return nullptr;
+    }
     if (funcName == "writeln" || funcName == "write")
     {
         func.second = std::vector<bool>(argList.size(), false);
     }
     if (funcName == "read")
-        func.second = std::vector<bool>(1, false);
+        func.second = std::vector<bool>(argList.size(), true);
     if (argList.size() != func.second.size())
     {
         logError("Wrong number of parameters passed");
@@ -249,39 +252,54 @@ Ast::SPL_IR FuncAst::codeGen() const
     int idx = 0;
     std::vector<llvm::Value*> argsv;
     std::vector<llvm::Type*> arg_raw_type;
-    for (auto& arg: func.first->args())
+    if (funcName == "writeln" || funcName == "write")
     {
-        bool is_var = func.second[idx++];
-        if (is_var)
+        bool writeln = funcName == "writeln";
+        for (auto& arg: argList)
+            argsv.push_back(arg->codeGen());
+        argsv = getWriteArgument(context, argsv, module, writeln);
+    }
+    else if (funcName == "read")
+    {
+        for (auto& arg: argList)
         {
-            auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
-            if (!var_ptr)
+            VarAst* arg_ptr = dynamic_cast<VarAst*>(arg.get());
+            if (!arg_ptr)
             {
                 logError("Right value cannot be refered");
                 return nullptr;
             }
-            argsv.push_back(var_ptr->genPtr());
-            if (funcName == "read")
-                arg_raw_type.push_back(var_ptr->codeGen()->getType());
+            auto ptr = arg_ptr->genPtr();
+            argsv.push_back(ptr);
+            arg_raw_type.push_back(ptr->getType()->getContainedType(0));
         }
-        else
-            argsv.push_back(argList[idx]->codeGen());
-        if (!argsv.back())
-            return nullptr;
-        if (argsv.back()->getType() != arg.getType())
-        {
-            logError("Parameter's type unmatched");
-            return nullptr;
-        }
-        ++idx;
-    }
-    if (funcName == "writeln" || funcName == "write")
-    {
-        bool writeln = funcName == "writeln";
-        argsv = getWriteArgument(context, argsv, module, writeln);
-    }
-    else if (funcName == "read")
         argsv = getReadArgument(context, argsv, arg_raw_type, module);
+    }
+    else
+        for (auto& arg: func.first->args())
+        {
+            bool is_var = func.second[idx];
+            if (is_var)
+            {
+                auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
+                if (!var_ptr)
+                {
+                    logError("Right value cannot be refered");
+                    return nullptr;
+                }
+                argsv.push_back(var_ptr->genPtr());
+            }
+            else
+                argsv.push_back(argList[idx]->codeGen());
+            if (!argsv.back())
+                return nullptr;
+            if (argsv.back()->getType() != arg.getType())
+            {
+                logError("Parameter's type unmatched");
+                return nullptr;
+            }
+            ++idx;
+        }
     return builder.CreateCall(func.first, argsv);
 }
 
@@ -301,7 +319,8 @@ Ast::SPL_IR AssignAst::codeGen() const
         logError("Type unmatched");
         return nullptr;
     }
-    
+    if (value->getType()->isIntegerTy() && var_ptr->getType()->getContainedType(0)->isIntegerTy()) 
+        value = builder.CreateSExtOrTrunc(value, var_ptr->getType()->getContainedType(0));
     return builder.CreateStore(value, var_ptr);
 }
 
@@ -327,7 +346,7 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
     auto var_t = this->type->genType();
     if (!var_t)
         return nullptr;
-    if (st.hasName(name))
+    if (st.hasName(name, true))
     {
         logError("Redefinition of variable");
         return nullptr;
@@ -347,6 +366,7 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
 
 llvm::Value* FuncDeclAst::codeGen() const
 {
+    auto beforebb = builder.GetInsertBlock();
     if (st.hasName(name))
     {
         logError("Name collision");
@@ -378,9 +398,10 @@ llvm::Value* FuncDeclAst::codeGen() const
     idx = 0;
     for (auto& arg: func->args())
         arg.setName(args[idx++].second);
-    st.insertFunction(name, func, is_var);
     // parameter pass of function    
+    st.insertFunction(name, func, is_var);
     st.pushScope();
+    st.insertFunction(name, func, is_var);
     auto entrybb = llvm::BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(entrybb);
     idx = 0;
@@ -400,7 +421,8 @@ llvm::Value* FuncDeclAst::codeGen() const
         else 
         {
             auto tmp_ptr = builder.CreateAlloca(arg.getType());
-            builder.CreateStore(tmp_ptr, &arg);
+            // builder.CreateStore(tmp_ptr, &arg);
+            builder.CreateStore(&arg, tmp_ptr);
             st.insertVar(arg.getName(), tmp_ptr);
         }
         ++idx;
@@ -408,7 +430,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     llvm::Value* ret_ptr = nullptr;
     if (!ret_ty->isVoidTy())
     {
-        ret_ptr = builder.CreateAlloca(ret_ty);
+        ret_ptr = builder.CreateAlloca(ret_ty, nullptr, "ret_var");
         st.insertVar("0" + name, ret_ptr);
     }
     // generate body of function
@@ -420,8 +442,10 @@ llvm::Value* FuncDeclAst::codeGen() const
     }
     else
         builder.CreateRetVoid();
+    llvm::verifyFunction(*func);
     // remove local variable from symbol table
     st.popScope();
+    builder.SetInsertPoint(beforebb);
     return nullptr;
 }
 
@@ -627,7 +651,11 @@ Ast::SPL_IR ForAst::codeGen() const
     auto endv = end->codeGen();
     if (!endv)
         return nullptr;
-    auto condv = builder.CreateICmpEQ(loopv, endv);
+    llvm::Value* condv = nullptr;
+    if (dir_init_to_end)
+        condv = builder.CreateICmpSGT(loopv, endv);
+    else 
+        condv = builder.CreateICmpSLT(loopv, endv);
     builder.CreateCondBr(condv, afterbb, bodybb);
     thefunc->getBasicBlockList().push_back(bodybb);
     builder.SetInsertPoint(bodybb);
@@ -789,4 +817,34 @@ Ast::SPL_IR CompoundAst::codeGen() const
         stmt->codeGen();
     return nullptr;
 }
+
+void initEnv()
+{
+    auto read_func = createReadPrototype(context, &module);
+    auto write_func = createWritePrototype(context, &module);
+    // add sys_func to symbol table
+    st.insertFunction("read", read_func, std::vector<bool>());
+    st.insertFunction("write", write_func, std::vector<bool>());
+    st.insertFunction("writeln", write_func, std::vector<bool>());
+    // add built-in type
+    st.insertType("boolean", llvm::Type::getInt1Ty(context));
+    st.insertType("integer", llvm::Type::getInt32Ty(context));
+    st.insertType("char", llvm::Type::getInt8Ty(context));
+    st.insertType("real", llvm::Type::getDoubleTy(context));
+}
+
+void genIR(Ast* lib_func, Ast* root, llvm::raw_ostream& out)
+{
+    initEnv();
+    lib_func->codeGen();
+    std::vector<llvm::Type *> argTypes;
+    llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), makeArrayRef(argTypes), false);
+    llvm::Function *mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", &module);
+    llvm::BasicBlock *bblock = llvm::BasicBlock::Create(context, "entry", mainFunction, nullptr);
+    builder.SetInsertPoint(bblock);
+    root->codeGen(); 
+    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+    module.print(out, nullptr);
+}
+
 }
