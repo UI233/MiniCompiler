@@ -120,8 +120,12 @@ namespace SPL {
 		// StmtAst is Ast those has not value.
 	{
 		//the function is for debug
+	private:
+		int lineNo;
 	public:
 		StmtAst();
+		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
+		int getLineNo() { return this->lineNo; };
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~StmtAst() = 0;
 	};

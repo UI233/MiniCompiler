@@ -39,3 +39,4 @@ begin
 	writeln( sqrt(2.0) );
 end
 .
+

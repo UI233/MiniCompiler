@@ -2,9 +2,10 @@
     #include "Ast.h"
     #include <fstream>
     SPL::CompoundAst* program;
-    extern int yylineno;
+    SPL::CompoundAst* global_head;
+    extern int lineno;
     extern int yylex();
-    void yyerror(const char *s) { printf("ERROR: %s\n at line:%d\n", s, yylineno); }
+    void yyerror(const char *s) { printf("ERROR: %s\n at line:%d\n", s, lineno); }
 
 
     //typedef struct para para;
@@ -43,6 +44,7 @@
 	SPL::CaseAst* caseast;
 	SPL::ParaDecl* paradecl;
 	SPL::GotoAst* gotoast;
+	SPL::VarAst* varast;
 
 	std::vector<SPL::FuncDeclAst*>* vecfuncdeclastPtr;
 	std::vector<struct para>* vecparaPtr;
@@ -139,6 +141,8 @@
 %type <gotoast> goto_stmt
 %type <vecexprastPtr> args_list
 %type <compoundast> program
+%type <compoundast> global_routine_head
+%type <varast> fact
 
 
 %start program
@@ -153,12 +157,18 @@ program_head : TOKEN_PROGRAM TOKEN_ID TOKEN_SEMI {
 	;
 }
 
-routine : routine_head routine_body {
+routine : global_routine_head routine_body {
 //TODO
 	$$ = $<compoundast>1;
 	$$ -> merge($<compoundast>2);
 	program = $$;
+	std::cout<<lineno<<std::endl;
 	//program = $$;
+}
+
+global_routine_head : routine_head {
+	$$ = $<compoundast>1;
+	global_head = $$;
 }
 
 sub_routine: routine_head routine_body {
@@ -177,6 +187,7 @@ routine_head: const_part type_part var_part routine_part{
 
 const_part: TOKEN_CONST const_expr_list {
 	$$ = $<compoundast>2;
+	std::cout<<lineno<<std::endl;
 }
 | {$$ = nullptr;}
 
@@ -187,6 +198,7 @@ const_expr_list:const_expr_list TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 }
 | TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 	SPL::ConstDeclAst* t = new SPL::ConstDeclAst(*$<stringPtr>1, $<constast>3->getType(), $<constast>3->getValue());
+	t->setLineNo(lineno);
 	std::vector<SPL::StmtAst*> vect;
 	vect.push_back(t);
 	$$ = new SPL::CompoundAst(vect);
@@ -223,8 +235,10 @@ type_decl_list: type_decl_list type_defination {
 }
 | type_defination {
 	std::vector<SPL::StmtAst*> vect;
+	$<typedeclast>1->setLineNo(lineno);
 	vect.push_back($<typedeclast>1);
 	$$ = new SPL::CompoundAst(vect);
+
 }
 
 type_defination: TOKEN_ID TOKEN_EQ type_decl TOKEN_SEMI {
@@ -323,7 +337,9 @@ var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 
 	$$ = new SPL::CompoundAst(std::vector<SPL::StmtAst*> () );
 	for (auto name: *($<vecstrPtr>1) ) {
-		$$ -> addStmt(new SPL::SimpleVarDeclAst(name, $<typeast>3 ));
+		SPL::SimpleVarDeclAst* p = new SPL::SimpleVarDeclAst(name, $<typeast>3 );
+		p -> setLineNo(lineno);
+		$$->addStmt(p);
 	}
 
 }
@@ -331,8 +347,10 @@ var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 
 routine_part: routine_part function_decl {
 	$$ = $<compoundast>1;
+	$<funcdeclast>2 -> setLineNo(lineno);
 	$$->addStmt($<funcdeclast>2);
 } | function_decl {
+	$<funcdeclast>1->setLineNo(lineno);
 	std::vector<SPL::StmtAst*> t;
 	t.push_back($<funcdeclast>1);
 	$$ = new SPL::CompoundAst(t);
@@ -343,6 +361,7 @@ routine_part: routine_part function_decl {
 	$$ = $<compoundast>1;
 	$$->addStmt($<funcdeclast>2);
 } | procedure_decl {
+	$<funcdeclast>1->setLineNo(lineno);
 	std::vector<SPL::StmtAst*> t;
 	t.push_back($<funcdeclast>1);
 	$$ = new SPL::CompoundAst(t);
@@ -411,8 +430,10 @@ stmt_list: stmt_list stmt TOKEN_SEMI {
 
 stmt: TOKEN_INTEGER_LITERAL TOKEN_COLON non_label_stmt {
 	$$ = new SPL::LabelAst(std::stoi(*$<stringPtr>1), $<stmtast>3);
+	$$->setLineNo(lineno);
 } | non_label_stmt {
 	$$ = $<stmtast>1;
+	$$->setLineNo(lineno);
 }
 
 non_label_stmt:assign_stmt {
@@ -437,12 +458,8 @@ non_label_stmt:assign_stmt {
 	$<stmtast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
 }
 
-assign_stmt: TOKEN_ID TOKEN_ASSIGN expression {
-	$$ = new SPL::AssignAst(new SPL::SymbolAst(*($<stringPtr>1)), $<exprast>3 );
-} | TOKEN_ID TOKEN_LB expression TOKEN_RB TOKEN_ASSIGN expression {
-	$$ = new SPL::AssignAst(new SPL::ArrayAst(new SPL::SymbolAst(*($<stringPtr>1)), $<exprast>3), $<exprast>6 );	
-} | TOKEN_ID TOKEN_DOT TOKEN_ID TOKEN_ASSIGN expression {
-	$$ = new SPL::AssignAst(new SPL::DotAst(new SPL::SymbolAst(*($<stringPtr>1)), *($<stringPtr>3) ), $<exprast>5 );
+assign_stmt: fact TOKEN_ASSIGN expression {
+	$$ = new SPL::AssignAst($<varast>1, $<exprast>3 );
 }
 
 if_stmt: TOKEN_IF expression TOKEN_THEN stmt else_clause {
@@ -527,31 +544,37 @@ term: term TOKEN_MUL factor {
 	$$ = new SPL::MathAst(OP_DIV, $<exprast>1, $<exprast>3);
 } | term TOKEN_MOD factor {
 	$$ = new SPL::MathAst(OP_MOD, $<exprast>1, $<exprast>3);
-} | term TOKEN_AND factor{
+} | term TOKEN_AND factor {
 	$$ = new SPL::MathAst(OP_AND, $<exprast>1, $<exprast>3);
 } | factor {
 	$$ = $<exprast>1;
 }
 
-factor: const_ast {
-	$<exprast>$ = $<constast>1;
-} | TOKEN_ID {
-	$<exprast>$ = new SPL::SymbolAst(*$<stringPtr>1);
-} | TOKEN_SUB factor {
+
+factor:  TOKEN_SUB fact {
 	$<exprast>$ = new SPL::MathAst(OP_NG,$<exprast>2, nullptr);
-} | TOKEN_ID TOKEN_DOT TOKEN_ID {
-	$<exprast>$ = new SPL::DotAst(new SPL::SymbolAst(*$<stringPtr>1), *$<stringPtr>2);
-} | TOKEN_ID TOKEN_LB expression TOKEN_RB {
-	$<exprast>$ = new SPL::ArrayAst(new SPL::SymbolAst(*$<stringPtr>1), $<exprast>3);
-} | TOKEN_NOT factor {
+} |  TOKEN_NOT fact {
 	$<exprast>$ = new SPL::MathAst(OP_NOT,$<exprast>2, nullptr);
+} | fact {
+	$<exprast>$ = $<varast>1;
+} |  const_ast {
+	$<exprast>$ = $<constast>1;
 } | TOKEN_ID TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
 } | TOKEN_SYS_FUNCTION TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
 } | TOKEN_LP expression TOKEN_RP {
 	$<exprast>$ = $<exprast>2;
-}
+} 
+
+
+fact : TOKEN_ID {
+	$<varast>$ = new SPL::SymbolAst(*$<stringPtr>1);
+} | fact TOKEN_DOT TOKEN_ID {
+	$<varast>$ = new SPL::DotAst($<varast>1, *$<stringPtr>3);
+} | fact TOKEN_LB expression TOKEN_RB {
+	$<varast>$ = new SPL::ArrayAst($<varast>1 , $<exprast>3);
+} 
 
 args_list: args_list TOKEN_COMMA expression {
 	$$ = $<vecexprastPtr>1;
