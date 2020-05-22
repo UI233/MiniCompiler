@@ -598,6 +598,7 @@ Ast::SPL_IR LabelAst::codeGen() const
     builder.CreateBr(afterbb);
     thefunc->getBasicBlockList().push_back(afterbb);
     builder.SetInsertPoint(afterbb);
+    st.insertLabel(std::to_string(label), labelbb);
     return nullptr;
 }
 

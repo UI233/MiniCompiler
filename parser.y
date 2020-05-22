@@ -3,9 +3,9 @@
     #include <fstream>
     SPL::CompoundAst* program;
     SPL::CompoundAst* global_head;
-    extern int lineno;
+    extern int yylineno;
     extern int yylex();
-    void yyerror(const char *s) { printf("ERROR: %s\n at line:%d\n", s, lineno); }
+    void yyerror(const char *s) { printf("ERROR: %s\n at line:%d\n", s, yylineno); }
 
 
     //typedef struct para para;
@@ -162,7 +162,7 @@ routine : global_routine_head routine_body {
 	$$ = $<compoundast>1;
 	$$ -> merge($<compoundast>2);
 	program = $$;
-	// std::cout<<lineno<<std::endl;
+	// std::cout<<yylineno<<std::endl;
 	//program = $$;
 }
 
@@ -187,7 +187,7 @@ routine_head: const_part type_part var_part routine_part{
 
 const_part: TOKEN_CONST const_expr_list {
 	$$ = $<compoundast>2;
-	// std::cout<<lineno<<std::endl;
+	// std::cout<<yylineno<<std::endl;
 }
 | {$$ = nullptr;}
 
@@ -198,7 +198,7 @@ const_expr_list:const_expr_list TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 }
 | TOKEN_ID TOKEN_EQ const_ast TOKEN_SEMI {
 	SPL::ConstDeclAst* t = new SPL::ConstDeclAst(*$<stringPtr>1, $<constast>3->getType(), $<constast>3->getValue());
-	t->setLineNo(lineno);
+	t->setLineNo(yylineno);
 	std::vector<SPL::StmtAst*> vect;
 	vect.push_back(t);
 	$$ = new SPL::CompoundAst(vect);
@@ -235,7 +235,7 @@ type_decl_list: type_decl_list type_defination {
 }
 | type_defination {
 	std::vector<SPL::StmtAst*> vect;
-	$<typedeclast>1->setLineNo(lineno);
+	$<typedeclast>1->setLineNo(yylineno);
 	vect.push_back($<typedeclast>1);
 	$$ = new SPL::CompoundAst(vect);
 
@@ -338,7 +338,7 @@ var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 	$$ = new SPL::CompoundAst(std::vector<SPL::StmtAst*> () );
 	for (auto name: *($<vecstrPtr>1) ) {
 		SPL::SimpleVarDeclAst* p = new SPL::SimpleVarDeclAst(name, $<typeast>3 );
-		p -> setLineNo(lineno);
+		p -> setLineNo(yylineno);
 		$$->addStmt(p);
 	}
 
@@ -347,10 +347,10 @@ var_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 
 routine_part: routine_part function_decl {
 	$$ = $<compoundast>1;
-	$<funcdeclast>2 -> setLineNo(lineno);
+	$<funcdeclast>2 -> setLineNo(yylineno);
 	$$->addStmt($<funcdeclast>2);
 } | function_decl {
-	$<funcdeclast>1->setLineNo(lineno);
+	$<funcdeclast>1->setLineNo(yylineno);
 	std::vector<SPL::StmtAst*> t;
 	t.push_back($<funcdeclast>1);
 	$$ = new SPL::CompoundAst(t);
@@ -361,7 +361,7 @@ routine_part: routine_part function_decl {
 	$$ = $<compoundast>1;
 	$$->addStmt($<funcdeclast>2);
 } | procedure_decl {
-	$<funcdeclast>1->setLineNo(lineno);
+	$<funcdeclast>1->setLineNo(yylineno);
 	std::vector<SPL::StmtAst*> t;
 	t.push_back($<funcdeclast>1);
 	$$ = new SPL::CompoundAst(t);
@@ -430,10 +430,10 @@ stmt_list: stmt_list stmt TOKEN_SEMI {
 
 stmt: TOKEN_INTEGER_LITERAL TOKEN_COLON non_label_stmt {
 	$$ = new SPL::LabelAst(std::stoi(*$<stringPtr>1), $<stmtast>3);
-	$$->setLineNo(lineno);
+	$$->setLineNo(yylineno);
 } | non_label_stmt {
 	$$ = $<stmtast>1;
-	$$->setLineNo(lineno);
+	$$->setLineNo(yylineno);
 }
 
 non_label_stmt:assign_stmt {
@@ -495,7 +495,7 @@ case_stmt: TOKEN_CASE expression TOKEN_OF case_expr_list TOKEN_END {
 }
 
 goto_stmt: TOKEN_GOTO TOKEN_INTEGER_LITERAL {
-	$$ = new SPL::GotoAst(std::stoi(*$<stringPtr>1));
+	$$ = new SPL::GotoAst(std::stoi(*$<stringPtr>2));
 }
 
 case_expr_list: case_expr_list case_expr {
