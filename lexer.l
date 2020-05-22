@@ -94,10 +94,7 @@ char		(\'.\')
 "with"				{ return TOKEN(TOKEN_WITH); }
 
 "false"|"maxint"|"true" { yylval.stringPtr = new std::string(yytext);  return TOKEN(TOKEN_SYS_CONST); }
-"abs"|"chr"|"odd"|"ord"|"pred"|"sqr"|"sqrt"|"succ" {yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_FUNCTION); }
-"write"|"writeln" {yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_FUNCTION); }
 "boolean"|"char"|"integer"|"real"|"string" {yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_TYPE); }
-"read"  {yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_SYS_FUNCTION); }
 
 {id}		{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_ID); }
 {char}	{yylval.stringPtr = new std::string(yytext); return TOKEN(TOKEN_CHAR_LITERAL); }
