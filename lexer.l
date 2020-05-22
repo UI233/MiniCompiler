@@ -10,8 +10,6 @@
 int lineno = 1;
 %}
 
-
-
 delim		[ \t]
 ws			{delim}+
 letter		[A-Za-z]
@@ -111,3 +109,4 @@ char		(\'.\')
 int yywrap() {
 	return 1;
 }
+
