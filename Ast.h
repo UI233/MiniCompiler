@@ -45,7 +45,7 @@ namespace SPL {
 	class IndexAst {
 	public:
 		IndexAst() {};
-		~IndexAst() {};
+		virtual ~IndexAst() {};
 		virtual void __show(std::fstream& fout) {};
 		virtual int genIndex() const = 0;
 	};
@@ -75,10 +75,10 @@ namespace SPL {
 		ConstAst(bool x);
 		ConstAst(std::string x);
 		int genIndex() const override;
-		//SPL_TYPE getType() {return this->type;};
-		//valueUnion getValue() {return this->value;};
+		SPL_TYPE getType() {return this->type;};
+		valueUnion getValue() {return this->value;};
 		void __show(std::fstream& fout);
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 		~ConstAst();
 	};
 
@@ -94,10 +94,10 @@ namespace SPL {
 	public:
 		SymbolAst(const std::string& name);
 		~SymbolAst();
-		valueUnion getValue();
+		// valueUnion getValue();
 		int genIndex() const override;
 		void __show(std::fstream& fout);
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
 	};
 
@@ -105,17 +105,31 @@ namespace SPL {
 	class ArrayAst final : public VarAst {
 	protected:
 		//void print(void);
-		std::string arrayName;
-		std::unique_ptr<SymbolAst> sym;
+		std::unique_ptr<VarAst> sym;
 		std::unique_ptr<ExprAst> exp_index;
 	public:
-		ArrayAst(SymbolAst* sym_, ExprAst* exp_);
+		ArrayAst(VarAst* sym_, ExprAst* exp_);
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		~ArrayAst();
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
 	};
+	
+	class StmtAst :public Ast
+		// StmtAst is Ast those has not value.
+	{
+		//the function is for debug
+	private:
+		int lineNo;
+	public:
+		StmtAst();
+		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
+		int getLineNo() { return this->lineNo; };
+		virtual void __show(std::fstream& fout) = 0;
+		virtual ~StmtAst() = 0;
+	};
+	
 
 	class AssignAst final : public StmtAst {
 	protected:
@@ -124,30 +138,18 @@ namespace SPL {
 	public:
 		AssignAst(VarAst* lhs_, ExprAst* rhs_);
 		~AssignAst();
-		valueUnion getValue();
+		//valueUnion getValue();
 		void __show(std::fstream& fout);
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 	};
 	
-	
-	class StmtAst :public Ast
-		// StmtAst is Ast those has not value.
-	{
-		//the function is for debug
-	public:
-		StmtAst();
-		virtual void __show(std::fstream& fout) = 0;
-		virtual ~StmtAst() = 0;
-	};
-	
-
 	class LabelAst final: public StmtAst {
 	private:
 		int label;
 		std::unique_ptr<StmtAst> nonLabelAst;
 	public:
 		LabelAst(int label_, StmtAst* nonLabelAst_);
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 		void __show(std::fstream& fout);
 		~LabelAst();
 	};
@@ -274,14 +276,15 @@ namespace SPL {
 		Ast::SPL_IR codeGen() const override;
 	};
 
-	class TypeAst:public StmtAst
+	class TypeAst
 	{
 	
 	public:
 		TypeAst();
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~TypeAst() = 0;
-		//llvm::Type* codeGen() const;
+		virtual llvm::Type* genType() const = 0;
+		llvm::Type* codeGen() const override;
 	};
 
 	class SimpleTypeAst: public TypeAst {
@@ -291,6 +294,7 @@ namespace SPL {
 		SimpleTypeAst(const std::string& name_);
 		std::string getName() {return name;};
 		void __show(std::fstream& fout);
+		llvm::Type* genType() const override;
 		~SimpleTypeAst();
 	};
 
@@ -302,6 +306,7 @@ namespace SPL {
 	public:
 		ArrayTypeAst(TypeAst* memberType_, IndexAst* minIndex_, IndexAst* maxIndex_);
 		void __show(std::fstream& fout);
+		llvm::Type* genType() const override;
 		~ArrayTypeAst();
 	};
 
@@ -313,20 +318,21 @@ namespace SPL {
 		RecordTypeAst(std::vector<std::pair<TypeAst*, std::string> > members_);
 		void addMember(std::pair<TypeAst*, std::vector<std::string> > mem_);
 		void __show(std::fstream& fout);
+		llvm::Type* genType() const override;
 		~RecordTypeAst();
 	};
 
 
 	class DotAst final :public VarAst {
 	protected:
-		std::unique_ptr<SymbolAst> record;
+		std::unique_ptr<VarAst> record;
 		std::string field;
 	public:
-		DotAst(SymbolAst* record_, std::string& field_);
+		DotAst(VarAst* record_, std::string& field_);
 		//valueUnion getValue();
 		void __show(std::fstream& fout);
 		~DotAst();
-		Ast::SPL_IR codeGen() const;
+		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
 	};
 
@@ -340,7 +346,7 @@ namespace SPL {
 		RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members);
 		void __show(std::fstream& fout);
 		~RecordDeclAst();
-		llvm::Value* codeGen() const;
+		llvm::Value* codeGen() const override;
 		llvm::StructType* genType() const;
 	};
 
@@ -378,7 +384,7 @@ namespace SPL {
 		FuncDeclAst(std::string& funcName_, CompoundAst* body,const std::vector<std::pair<TypeAst*,std::string>>& args_, const std::vector<bool>& is_var_, TypeAst* ret_type_);
 		void __show(std::fstream& fout);
 		~FuncDeclAst();
-		llvm::Function* codeGen() const;
+		llvm::Value* codeGen() const override;
 	};
 
 	class ConstDeclAst final:public StmtAst {
@@ -391,7 +397,7 @@ namespace SPL {
 		
 		void __show(std::fstream& fout);
 		~ConstDeclAst();
-		//llvm::Function* codeGen() const;
+		llvm::Value* codeGen() const override;
 	};
 
 	class VarDeclAst : public StmtAst {
@@ -406,10 +412,10 @@ namespace SPL {
 		std::string name;
 		std::unique_ptr<TypeAst> type;
 	public:
-		SimpleVarDeclAst(std::string name_, TypeAst* type_);
+		SimpleVarDeclAst(const std::string& name_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~SimpleVarDeclAst();
-		llvm::Value* codeGen() const;
+		llvm::Value* codeGen() const override;
 	};
 
 	class TypeDeclAst final: public VarDeclAst {
@@ -420,7 +426,7 @@ namespace SPL {
 		TypeDeclAst(std::string& name_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~TypeDeclAst();
-		llvm::Value* codeGen() const;
+		llvm::Value* codeGen() const override;
 	};
 
 	class ArrayDeclAst final: public VarDeclAst{
@@ -433,7 +439,7 @@ namespace SPL {
 		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type_);
 		void __show(std::fstream& fout);
 		~ArrayDeclAst();
-		llvm::Value* codeGen() const;
+		llvm::Value* codeGen() const override;
 	};
 
 

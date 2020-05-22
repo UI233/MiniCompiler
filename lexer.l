@@ -6,6 +6,8 @@
 
 
 #define TOKEN(t) (t)
+
+int lineno = 1;
 %}
 
 
@@ -15,7 +17,7 @@ ws			{delim}+
 letter		[A-Za-z]
 digit		[0-9]
 id			{letter}(_|{letter}|{digit})*
-integer		{digit}+
+integer		[+\-]?{digit}+
 real		{digit}+(\.{digit}+)?(([E|e])[+\-]?{digit}+)?
 comment1	("{")
 comment2	(\/\/.*\n)
@@ -27,7 +29,7 @@ char		(\'.\')
 {ws}		{}
 {comment1}	{ }
 {comment2}	{ }
-"\n"		{ }
+"\n"		{ lineno++; }
 
 "("			{ return TOKEN(TOKEN_LP); }
 ")"			{ return TOKEN(TOKEN_RP); }
@@ -103,7 +105,7 @@ char		(\'.\')
 
 
 
-. std::cout<<"Unknown token:"<<yytext<<std::endl;
+. std::cout<<"Unknown token:"<<yytext<<"at line:"<<lineno<<std::endl;
 
 %%
 int yywrap() {
