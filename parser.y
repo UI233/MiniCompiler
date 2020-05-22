@@ -406,7 +406,7 @@ stmt_list: stmt_list stmt TOKEN_SEMI {
 	}
 }
 | {
-	$$ = nullptr;
+	$$ = new std::vector<SPL::StmtAst*>();
 }
 
 stmt: TOKEN_INTEGER_LITERAL TOKEN_COLON non_label_stmt {
@@ -549,6 +549,8 @@ factor: const_ast {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
 } | TOKEN_SYS_FUNCTION TOKEN_LP args_list TOKEN_RP {
 	$<exprast>$ = new SPL::FuncAst(*$<stringPtr>1, *$<vecexprastPtr>3);
+} | TOKEN_LP expression TOKEN_RP {
+	$<exprast>$ = $<exprast>2;
 }
 
 args_list: args_list TOKEN_COMMA expression {
