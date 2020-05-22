@@ -10,12 +10,23 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "SymbolTable.h"
 #include "SystemFunc.h"
 
 llvm::LLVMContext context;
 llvm::IRBuilder<> builder(context);
 llvm::Module module("MainModule", context);
+int errorno = 0;
+
 namespace SPL 
 {
 constexpr int ERRORNO = -2184744;
@@ -23,6 +34,7 @@ SymbolTable st;
 
 void logError(const std::string& err) 
 {
+    errorno = 1;
     std::cerr << err << std::endl;
 }
 
@@ -856,7 +868,7 @@ void initEnv()
     st.insertType("real", llvm::Type::getDoubleTy(context));
 }
 
-void genIR(Ast* lib_func, Ast* root, llvm::raw_ostream& out)
+void genIR(Ast* lib_func, SPL::Ast* root, std::string output_file, SPL_OUTPUT_TYPE output_flag)
 {
     initEnv();
     if (lib_func)
@@ -868,7 +880,60 @@ void genIR(Ast* lib_func, Ast* root, llvm::raw_ostream& out)
     builder.SetInsertPoint(bblock);
     root->codeGen(); 
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
-    module.print(out, nullptr);
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(output_file, EC, llvm::sys::fs::OpenFlags::F_None);
+    if (errorno == 0)
+    {
+        if (output_flag == IR)
+            module.print(dest, nullptr);
+        else {
+            // Initialize the target registry etc.
+            llvm::InitializeAllTargetInfos();
+            llvm::InitializeAllTargets();
+            llvm::InitializeAllTargetMCs();
+            llvm::InitializeAllAsmParsers();
+            llvm::InitializeAllAsmPrinters();
+
+            auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+            module.setTargetTriple(TargetTriple);
+
+            std::string Error;
+            auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+            // Print an error and exit if we couldn't find the requested target.
+            // This generally occurs if we've forgotten to initialise the
+            // TargetRegistry or we have a bogus target triple.
+            if (!Target) {
+                llvm::errs() << Error;
+                return ;
+            }
+
+            auto CPU = "generic";
+            auto Features = "";
+
+            llvm::TargetOptions opt;
+            auto RM = llvm::Optional<llvm::Reloc::Model>();
+            auto TheTargetMachine =
+                Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+            module.setDataLayout(TheTargetMachine->createDataLayout());
+            if (EC) {
+                llvm::errs() << "Could not open file: " << EC.message();
+                return ;
+            }
+
+            llvm::legacy::PassManager pass;
+            // generate object file or assembly
+            auto FileType = output_flag == OBJ ? llvm::TargetMachine::CGFT_ObjectFile : llvm::TargetMachine::CGFT_AssemblyFile;
+
+            if (TheTargetMachine->addPassesToEmitFile(pass, dest, FileType, true, nullptr)) {
+                llvm::errs() << "TheTargetMachine can't emit a file of this type";
+                return ;
+            }
+
+            pass.run(module);
+            dest.flush();
+        }
+    }
 }
 
 }

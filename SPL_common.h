@@ -1,8 +1,11 @@
 #ifndef _SPL_COMMON_H
 #define _SPL_COMMON_H
 
-
-
+enum SPL_OUTPUT_TYPE {
+	OBJ,
+	ASSEMBLY,
+	IR
+};
 
 enum SPL_TYPE {
 	BOOL = 1,

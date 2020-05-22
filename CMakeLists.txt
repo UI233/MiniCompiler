@@ -7,6 +7,18 @@ string(REGEX REPLACE "\n$" "" LLVM_LINK_DIR "${LLVM_LINK_DIR}")
 set(LINK_DIR ${LINK_DIR} ${LLVM_LINK_DIR})
 execute_process(COMMAND llvm-config --libnames OUTPUT_VARIABLE LLVM_LIB)
 string(REGEX REPLACE "\n$" "" LLVM_LIB "${LLVM_LIB}")
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_LIST_DIR}/parser.hpp ${CMAKE_CURRENT_LIST_DIR}/parser.cpp
+    COMMAND bison --defines=${CMAKE_CURRENT_LIST_DIR}/parser.hpp -o ${CMAKE_CURRENT_LIST_DIR}/parser.cpp ${CMAKE_CURRENT_LIST_DIR}/parser.y
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/parser.y
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_LIST_DIR}/lexer.cpp
+    COMMAND flex --yylineno -o ${CMAKE_CURRENT_LIST_DIR}/lexer.cpp ${CMAKE_CURRENT_LIST_DIR}/lexer.l
+    DEPENDS lexer.l
+)
+
 include_directories(${INC_DIR})
 link_directories(${LINK_DIR})
 message(${LINK_DIR})

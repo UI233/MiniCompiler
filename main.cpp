@@ -8,20 +8,13 @@
 #include "llvm/Support/raw_ostream.h"
 
 extern FILE *yyin;
-//extern SPL::Ast *program_const_part;
-//extern SPL::Ast *program_type_part;
-//extern SPL::Ast *program_var_part;
-//extern SPL::Ast *program_routine_body;
 extern SPL::CompoundAst *program;
 extern int yylineno;
-
-//void installSystemFunctions(Program *root);
-
 extern int yyparse();
 
-std::ofstream astOut;
-
 int main(int argc, char **argv) {
+	SPL_OUTPUT_TYPE output_flag = OBJ;
+	std::string output_file;
     std::string sourcePath;
 	std::string sourceFile;
 	// read lib function
@@ -30,29 +23,56 @@ int main(int argc, char **argv) {
 	fclose(yyin);
 	yylineno = 1;
     SPL::Ast* libroot = program;
-	// read program
-	if (argc > 1) {
-		sourceFile = sourcePath + argv[1];
-		yyin = fopen(sourceFile.c_str(), "r");
+	// parse argument
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i] == std::string("-o"))
+		{
+			if (i + 1 < argc)
+				output_file = argv[++i];
+			else
+			{
+				std::cerr << "fatal error: output file not specified" << std::endl;
+				return 1;
+			}
+		}	
+		else if (argv[i] == std::string("-s"))
+			output_flag = ASSEMBLY;
+		else if (argv[i] == std::string("-ll"))
+			output_flag = IR;
+		else if (argv[i] == std::string("-c"))
+			output_flag = OBJ;
+		else
+			sourceFile = sourcePath + argv[i];
 	}
-	else
-		yyin = stdin;
+	if (argc <= 1) {
+		std::cerr << "fatal error: no input files" << std::endl;
+		return 1;
+	}
+	if (output_file == "")
+	{
+		switch (output_flag)
+		{
+		case OBJ:
+			output_file = sourceFile + ".o";
+			break;
+		case IR:
+			output_file = sourceFile + ".ll";
+			break;
+		case ASSEMBLY:
+			output_file = sourceFile + ".s";
+			break;
+		default:
+			break;
+		}
+	}
+	yyin = fopen(sourceFile.c_str(), "r");
     yyparse();
 	fclose(yyin);
     SPL::Ast* root = program;
 	std::fstream fout;
 	fout.open("output",std::ios::out);
-	// root->__show(fout);
-	/* Create the top level interpreter function to call as entry */
-	genIR(libroot, root, llvm::errs());
-/*
-	root = program_type_part;
-	root->__show(fout);
-	root = program_var_part;
-	root->__show(fout);
-	root = program_routine_body;
-	root->__show(fout);
-*/
-//	fout.close();
+	if (root)
+		genIR(libroot, root, output_file, output_flag);
     return 0;
 }
