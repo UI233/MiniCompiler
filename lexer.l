@@ -45,7 +45,7 @@ char		(\'.\')
 "-"             { return TOKEN(TOKEN_SUB); }
 "*"             { return TOKEN(TOKEN_MUL); }
 "/"             { return TOKEN(TOKEN_DIV); }
-"MOD" | "mod"   { return TOKEN(TOKEN_MOD); }
+"MOD"|"mod"   { return TOKEN(TOKEN_MOD); }
 
 "<>"	        { return TOKEN(TOKEN_NE); }
 "<="            { return TOKEN(TOKEN_LE); }
