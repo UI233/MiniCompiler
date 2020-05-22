@@ -1,5 +1,4 @@
 program system_functions;
-
 function ord(x:char): integer;
 begin
     ord := x;
@@ -31,7 +30,7 @@ end;
 function fabs(x:real):real;
 begin
     if (x > 0.0) then 
-        fabs:= x;
+        fabs:= x
     else 
         fabs:= 0.0 - x;
 end;
@@ -55,7 +54,6 @@ begin
     else 
         odd := false;
 end;
-
 
 function sqr(x:real):real;
 begin

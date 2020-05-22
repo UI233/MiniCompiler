@@ -13,6 +13,7 @@ extern FILE *yyin;
 //extern SPL::Ast *program_var_part;
 //extern SPL::Ast *program_routine_body;
 extern SPL::CompoundAst *program;
+extern int yylineno;
 
 //void installSystemFunctions(Program *root);
 
@@ -27,6 +28,7 @@ int main(int argc, char **argv) {
 	yyin = fopen("lib.spl", "r");
     yyparse();
 	fclose(yyin);
+	yylineno = 1;
     SPL::Ast* libroot = program;
 	// read program
 	if (argc > 1) {

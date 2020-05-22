@@ -74,25 +74,34 @@ Ast::SPL_IR MathAst::codeGen() const
 {
     static auto isSupportedType = [](llvm::Type* ty)
     {
-        return ty->isDoubleTy() || ty->isIntegerTy();
+        return ty ? ty->isDoubleTy() || ty->isIntegerTy() : true;
     };
-    if (!lchild || !rchild) 
+    llvm::Value* lhs = nullptr, *rhs = nullptr;
+    llvm::Type* lhs_ty = nullptr, *rhs_ty= nullptr;
+    bool is_fp = true;
+    if (lchild)
+    {
+        lhs = lchild->codeGen();
+        lhs_ty = lhs->getType();
+        is_fp &= lhs_ty->isDoubleTy();
+    }
+    if (rchild)
+    {
+        rhs = rchild->codeGen();
+        rhs_ty = rhs->getType();
+        is_fp &= rhs_ty->isDoubleTy();
+    }
+    if ((!lchild && !rchild) || (!rchild && op != OP_NG && op != OP_NOT))
     {
         logError("Invalid number of operand for operator");
         return nullptr;
     }
-    auto lhs = lchild->codeGen();
-    auto rhs = rchild->codeGen();
-    if (!lhs || !rhs)
-        return nullptr;
-    auto lhs_ty = lhs->getType();
-    auto rhs_ty = rhs->getType();
     if (!isSupportedType(lhs_ty) || !isSupportedType(rhs_ty))
     {
         logError("Invalid type of operand for operator");
         return nullptr;
     }
-    if (lhs_ty != rhs_ty)
+    if (lhs_ty != rhs_ty && rhs_ty)
     {
         if (lhs_ty->isDoubleTy()) 
             rhs = builder.CreateSIToFP(rhs, lhs_ty, "rcasttmp");
@@ -114,10 +123,11 @@ Ast::SPL_IR MathAst::codeGen() const
         {
             throw "unsupported branch";
         }
+        lhs_ty = lhs->getType();
+        rhs_ty = rhs->getType();
+        is_fp = lhs_ty->isDoubleTy() && rhs_ty->isDoubleTy() ;
     }
-    lhs_ty = lhs->getType();
-    rhs_ty = rhs->getType();
-    bool is_fp = lhs_ty->isDoubleTy() && rhs_ty->isDoubleTy();
+    
     switch(op)
     {
     case OP_ADD:
@@ -146,6 +156,10 @@ Ast::SPL_IR MathAst::codeGen() const
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
     case OP_AND:
         return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateAnd(lhs, rhs, "ortmp");
+    case OP_NOT:
+        return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateNot(lhs, "nottmp");
+    case OP_NG:
+        return is_fp ? builder.CreateFNeg(lhs, "fnegtmp") : builder.CreateNeg(lhs, "negtmp");
     default:
         return nullptr;
     }
@@ -153,7 +167,10 @@ Ast::SPL_IR MathAst::codeGen() const
 
 Ast::SPL_IR SymbolAst::genPtr() const
 {
-    return st.getVarSymbol(name);
+    auto ptr =  st.getVarSymbol(name);
+    if (!ptr)
+        logError("Undefined Variable");
+    return ptr;
 }
 
 Ast::SPL_IR SymbolAst::codeGen() const
@@ -314,13 +331,19 @@ Ast::SPL_IR AssignAst::codeGen() const
         logError("Right value cannot be assigned");
         return nullptr;
     }
+    auto var_ty = var_ptr->getType()->getContainedType(0);
+    auto value_ty = value->getType();
+    if (value_ty->isIntegerTy() && var_ty->isIntegerTy()) 
+        value = builder.CreateSExtOrTrunc(value, var_ptr->getType()->getContainedType(0));
+    else if (value_ty->isDoubleTy() && var_ty->isIntegerTy())
+        value = builder.CreateFPToSI(value, var_ty);
+    else if (value_ty->isIntegerTy() && var_ty->isDoubleTy())
+        value = builder.CreateSIToFP(value, var_ty);
     if (var_ptr->getType()->getContainedType(0) != value->getType())
     {
         logError("Type unmatched");
         return nullptr;
     }
-    if (value->getType()->isIntegerTy() && var_ptr->getType()->getContainedType(0)->isIntegerTy()) 
-        value = builder.CreateSExtOrTrunc(value, var_ptr->getType()->getContainedType(0));
     return builder.CreateStore(value, var_ptr);
 }
 
@@ -836,7 +859,8 @@ void initEnv()
 void genIR(Ast* lib_func, Ast* root, llvm::raw_ostream& out)
 {
     initEnv();
-    lib_func->codeGen();
+    if (lib_func)
+        lib_func->codeGen();
     std::vector<llvm::Type *> argTypes;
     llvm::FunctionType *ftype = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), makeArrayRef(argTypes), false);
     llvm::Function *mainFunction = llvm::Function::Create(ftype, llvm::GlobalValue::ExternalLinkage, "main", &module);
