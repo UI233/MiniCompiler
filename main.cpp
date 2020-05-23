@@ -74,5 +74,15 @@ int main(int argc, char **argv) {
 	fout.open("output",std::ios::out);
 	if (root)
 		genIR(libroot, root, output_file, output_flag);
+	fout.close();
+
+	std::cout<<"output AST begin"<<std::endl;
+	fout.open("ast.dot",std::ios::out);
+	fout << "digraph ast{" << std::endl;
+	root->__show(fout, -1);
+	fout << "}" << std::endl;
+	fout.close();
+	std::cout<<"end AST begin"<<std::endl;
+
     return 0;
 }

@@ -23,7 +23,7 @@ namespace SPL {
 		//get the value of ast, if has not, return ERROR_NO_VAL
 		//virtual valueUnion getValue() = 0;
 		//the function is for debug
-		virtual void __show(std::fstream& fout) = 0;
+		virtual void __show(std::fstream& fout, int node_num) = 0;
 
 		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
 		int getLineNo() { return this->lineNo; };
@@ -41,7 +41,7 @@ namespace SPL {
 		using SPL_IR = void;
 		//get Ast's value (if has)
 		//virtual valueUnion getValue() = 0;
-		virtual void __show(std::fstream& fout) = 0;
+		virtual void __show(std::fstream& fout, int node_num) = 0;
 		virtual ~ExprAst() = default;
 		ExprAst() = default;
 	};
@@ -50,7 +50,7 @@ namespace SPL {
 	public:
 		IndexAst() {};
 		virtual ~IndexAst() {};
-		virtual void __show(std::fstream& fout) {};
+		virtual void __show(std::fstream& fout, int node_num) {};
 		virtual int genIndex() const = 0;
 	};
 	
@@ -63,7 +63,7 @@ namespace SPL {
 	public:
 		MathAst(SPL_OP op, ExprAst* left = nullptr, ExprAst* right = nullptr);
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 		~MathAst();
 	};
@@ -81,7 +81,7 @@ namespace SPL {
 		int genIndex() const override;
 		SPL_TYPE getType() {return this->type;};
 		valueUnion getValue() {return this->value;};
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 		~ConstAst();
 	};
@@ -100,7 +100,7 @@ namespace SPL {
 		~SymbolAst();
 		// valueUnion getValue();
 		int genIndex() const override;
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
 	};
@@ -114,7 +114,7 @@ namespace SPL {
 	public:
 		ArrayAst(VarAst* sym_, ExprAst* exp_);
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~ArrayAst();
 		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
@@ -127,7 +127,7 @@ namespace SPL {
 
 	public:
 		StmtAst();
-		virtual void __show(std::fstream& fout) = 0;
+		virtual void __show(std::fstream& fout, int node_num) = 0;
 		virtual ~StmtAst() = 0;
 	};
 	
@@ -140,7 +140,7 @@ namespace SPL {
 		AssignAst(VarAst* lhs_, ExprAst* rhs_);
 		~AssignAst();
 		valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 	
@@ -151,7 +151,7 @@ namespace SPL {
 	public:
 		LabelAst(int label_, StmtAst* nonLabelAst_);
 		Ast::SPL_IR codeGen() const override;
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~LabelAst();
 	};
 
@@ -163,7 +163,7 @@ namespace SPL {
 	public:
 		IfAst(ExprAst* cond_, StmtAst* doIf_, StmtAst* doElse_=nullptr);
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		void addRight(StmtAst* doElse_);
 		Ast::SPL_IR codeGen() const override;
 		~IfAst();
@@ -184,7 +184,7 @@ namespace SPL {
 	public:
 		CaseAst(ExprAst* cond_, std::vector<CaseUnit*> caseStmt_);
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 		~CaseAst();
 	};
@@ -198,7 +198,7 @@ namespace SPL {
 		WhileAst(ExprAst* cond_, StmtAst* stmt_);
 		~WhileAst();
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -210,8 +210,8 @@ namespace SPL {
 	public:
 		RepeatAst(std::vector<StmtAst*>& stmtList_, ExprAst* exp_);
 		~RepeatAst();
-		//valueUnion getValue(std::fstream& fout);
-		void __show(std::fstream& fout);
+		//valueUnion getValue(std::fstream& fout, int node_num);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -226,8 +226,8 @@ namespace SPL {
 	public:
 		ForAst(SymbolAst* id_, ExprAst* init, bool dir_, ExprAst* fin_, StmtAst* stmt_);
 		~ForAst();
-		//valueUnion getValue(std::fstream& fout);
-		void __show(std::fstream& fout) override;
+		//valueUnion getValue(std::fstream& fout, int node_num);
+		void __show(std::fstream& fout, int node_num) override;
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -240,7 +240,7 @@ namespace SPL {
 		~GotoAst();
 		int getlabel();
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -259,7 +259,7 @@ namespace SPL {
 		}
 		~CompoundAst();
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -273,7 +273,7 @@ namespace SPL {
 		FuncAst(std::string& funcName_, std::vector<ExprAst*> argList_);
 		~FuncAst();
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		Ast::SPL_IR codeGen() const override;
 	};
 
@@ -286,7 +286,7 @@ namespace SPL {
 		TypeAst();
 		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
 		int getLineNo() { return this->lineNo; };
-		virtual void __show(std::fstream& fout) = 0;
+		virtual void __show(std::fstream& fout, int node_num) = 0;
 		virtual ~TypeAst() = 0;
 		virtual llvm::Type* genType() const = 0;
 		//llvm::Type* codeGen() const overwrite;
@@ -298,7 +298,7 @@ namespace SPL {
 	public:
 		SimpleTypeAst(const std::string& name_);
 		std::string getName() {return name;};
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		llvm::Type* genType() const override;
 		~SimpleTypeAst();
 	};
@@ -310,7 +310,7 @@ namespace SPL {
 		std::unique_ptr<IndexAst> maxIndex;
 	public:
 		ArrayTypeAst(TypeAst* memberType_, IndexAst* minIndex_, IndexAst* maxIndex_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		llvm::Type* genType() const override;
 		~ArrayTypeAst();
 	};
@@ -322,7 +322,7 @@ namespace SPL {
 		RecordTypeAst();
 		RecordTypeAst(std::vector<std::pair<TypeAst*, std::string> > members_);
 		void addMember(std::pair<TypeAst*, std::vector<std::string> > mem_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		llvm::Type* genType() const override;
 		~RecordTypeAst();
 	};
@@ -335,7 +335,7 @@ namespace SPL {
 	public:
 		DotAst(VarAst* record_, std::string& field_);
 		//valueUnion getValue();
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~DotAst();
 		Ast::SPL_IR codeGen() const override;
 		Ast::SPL_IR genPtr() const override;
@@ -349,7 +349,7 @@ namespace SPL {
 		std::vector<std::pair<std::unique_ptr<TypeAst>, std::string>> members;
 	public:
 		RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*, std::string>> t_members);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~RecordDeclAst();
 		llvm::Value* codeGen() const override;
 		llvm::StructType* genType() const;
@@ -387,7 +387,7 @@ namespace SPL {
 		std::unique_ptr<TypeAst> ret_type;
 	public:
 		FuncDeclAst(std::string& funcName_, CompoundAst* body,const std::vector<std::pair<TypeAst*,std::string>>& args_, const std::vector<bool>& is_var_, TypeAst* ret_type_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~FuncDeclAst();
 		llvm::Value* codeGen() const override;
 	};
@@ -400,7 +400,7 @@ namespace SPL {
 	public:
 		ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_value_);
 		
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~ConstDeclAst();
 		llvm::Value* codeGen() const override;
 	};
@@ -418,7 +418,7 @@ namespace SPL {
 		std::unique_ptr<TypeAst> type;
 	public:
 		SimpleVarDeclAst(const std::string& name_, TypeAst* type_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~SimpleVarDeclAst();
 		llvm::Value* codeGen() const override;
 	};
@@ -429,7 +429,7 @@ namespace SPL {
 		std::unique_ptr<TypeAst> type;
 	public:
 		TypeDeclAst(std::string& name_, TypeAst* type_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~TypeDeclAst();
 		llvm::Value* codeGen() const override;
 	};
@@ -442,7 +442,7 @@ namespace SPL {
 		std::unique_ptr<TypeAst> type;
 	public:
 		ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* maxIndex_, TypeAst* type_);
-		void __show(std::fstream& fout);
+		void __show(std::fstream& fout, int node_num);
 		~ArrayDeclAst();
 		llvm::Value* codeGen() const override;
 	};
@@ -454,7 +454,7 @@ protected:
 	SYS_FUNC_ID id;
 public:
 	SysFuncAst(SYS_FUNC_ID sysFuncId_, std::vector<ExprAst*>& argList_);
-	void __show(std::fstream& fout);
+	void __show(std::fstream& fout, int node_num);
 	~SysFuncAst();
 	//Ast::SPL_IR codeGen() const override;
 };

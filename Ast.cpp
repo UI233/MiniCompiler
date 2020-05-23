@@ -2,15 +2,20 @@
 
 using namespace SPL;
 
+int node_count = 0;
 
 LabelAst::LabelAst(int label_, StmtAst* nonLabelAst_) :
 	label(label_), nonLabelAst(nonLabelAst_) {
 	this->nodeType = AST_LABEL;
 }
 
-void LabelAst::__show(std::fstream& fout) {
-	fout << "LabelAst:" << std::endl << "label:" << this->label << std::endl << "nonLabel Ast:" << std::endl;
-	this->nonLabelAst->__show(fout);
+void LabelAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num = node_count++;
+
+	fout << "_" << num << "[label=\"label:" << this->label << "\"]" << std::endl;
+	fout << "_" << num << " -> _" << next_num << std::endl;
+	this->nonLabelAst->__show(fout, next_num);
 }
 
 LabelAst::~LabelAst() {
@@ -46,13 +51,19 @@ MathAst::MathAst(SPL_OP op_, ExprAst* left , ExprAst* right) :
 	this->nodeType = AST_MATH;
 }
 
-void MathAst::__show(std::fstream& fout) {
-	fout << "MathAst: \nOperator:" << this->op << std::endl;
-	fout << "Left:";
-	if (this->lchild) this->lchild->__show(fout);
-	fout<<std::endl;
-	fout << "Right:";
-	if (this->rchild) this->rchild->__show(fout);
+void MathAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"op:" << this->op << "\"]" << std::endl;
+	if (this->lchild){
+		int next_num1 = node_count++;
+		fout << "_" << num << " -> _" << next_num1 << std::endl;
+		this->lchild->__show(fout, next_num1);
+	} 
+	if (this->rchild){
+		int next_num2 = node_count++;
+		fout << "_" << num << " -> _" << next_num2 << std::endl;
+		this->rchild->__show(fout, next_num2);
+	} 
 	fout<<std::endl;
 }
 
@@ -87,14 +98,14 @@ ConstAst::ConstAst(std::string x) :
 	this->nodeType = AST_CONST_DECL;
 }
 
-void ConstAst::__show(std::fstream& fout) {
-	fout << "Const Ast:";
+void ConstAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
 	switch (type) {
-	case STRING:fout << "STRING:" << *(this->value.valString) << std::endl; break;
-	case INT:fout << "INT:" << this->value.valInt << std::endl; break;
-	case REAL:fout << "REAL:" << this->value.valDouble << std::endl; break;
-	case BOOL:fout << "BOOL:" << this->value.valBool << std::endl; break;
-	case CHAR:fout << "CHAR:" << this->value.valChar << std::endl; break;
+	case STRING:fout << "_" << num << "[label=\"String: " << *(this->value.valString) << "\"]" << std::endl;break;
+	case INT:fout << "_" << num << "[label=\"Int: " << this->value.valInt << "\"]" << std::endl;break;
+	case REAL:fout << "_" << num << "[label=\"Double: " << this->value.valDouble << "\"]" << std::endl;break;
+	case BOOL:fout << "_" << num << "[label=\"Bool: " << this->value.valBool << "\"]" << std::endl;break;
+	case CHAR:fout << "_" << num << "[label=\"Char: " << this->value.valChar << "\"]" << std::endl;break;
 	}
 }
 
@@ -115,9 +126,9 @@ SimpleTypeAst::SimpleTypeAst(const std::string& name_):
 	;
 }
 
-void SimpleTypeAst::__show(std::fstream& fout) {
-	fout<<"Simple Type Ast-name:"<<std::endl;
-	fout<<name<<std::endl;
+void SimpleTypeAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"SimpleType: " << name << "\"]" << std::endl;
 }
 
 SimpleTypeAst::~SimpleTypeAst() {;}
@@ -127,13 +138,19 @@ ArrayTypeAst::ArrayTypeAst(TypeAst* memberType_, IndexAst* minIndex_, IndexAst* 
 	;
 }
 
-void ArrayTypeAst::__show(std::fstream& fout) {
-	fout<<"Array Type Ast-Type:"<<std::endl;
-	this->memberType->__show(fout);
-	fout<<"Array Type Ast-minIndex:"<<std::endl;
-	this->minIndex->__show(fout);
-	fout<<"Array Type Ast-maxIndex:"<<std::endl;
-	this->maxIndex->__show(fout);
+void ArrayTypeAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+	int next_num3 = node_count++;
+	fout << "_" << num << "[label=array]" << std::endl;
+
+	fout << "_" << num << " -> _" << next_num1 << "[label=type]"  << std::endl;
+	this->memberType->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num2 << "[label=minIndex]"  << std::endl;
+	this->minIndex->__show(fout, next_num2);
+	fout << "_" << num << " -> _" << next_num3 << "[label=maxIndex]"  << std::endl;
+	this->maxIndex->__show(fout, next_num3);
 }
 
 
@@ -152,14 +169,14 @@ RecordTypeAst::RecordTypeAst(std::vector<std::pair<TypeAst*, std::string> > memb
 }
 
 
-void RecordTypeAst::__show(std::fstream& fout) {
-	fout<<"Record Type Ast-members:"<<std::endl;
+void RecordTypeAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=Record]" << std::endl;
 	for (int i=0;i<this->members.size();i++) {
-		fout<<"members-"<<i<<": \nName:"<<this->members[i].second<<std::endl;
-		fout<<"Type:";
-		this->members[i].first->__show(fout);
+		int next_num = node_count++;
+		fout << "_" << num << " -> _" << next_num << "[label=\"member"<< i <<":"<<this->members[i].second << "\"]" << std::endl;
+		this->members[i].first->__show(fout, next_num);
 	}
-	fout<<"Record Type Ast-end."<<std::endl;
 }
 
 void RecordTypeAst::addMember(std::pair<TypeAst*, std::vector<std::string> > mem_) {
@@ -176,8 +193,9 @@ SymbolAst::SymbolAst(const std::string& name_) :
 	this->nodeType = AST_SYMBOL;
 }
 
-void SymbolAst::__show(std::fstream& fout) {
-	fout << "SymbolAst:" << this->name << std::endl;
+void SymbolAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"Symbol: " << this->name << "\"]" << std::endl;
 }
 
 SymbolAst::~SymbolAst() {
@@ -190,12 +208,15 @@ ArrayAst::ArrayAst(VarAst* sym_, ExprAst* exp_) :
 	this->nodeType = AST_ARRAY;
 }
 
-void ArrayAst::__show(std::fstream& fout) {
-	fout << "ArrayAst:" << std::endl;
-	fout << "ArrayNameAst:";
-	this->sym->__show(fout);
-	fout << "IndexExpAst:";
-	this->exp_index->__show(fout);
+void ArrayAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+	fout << "_" << num << "[label=Array]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=name]" << std::endl;
+	this->sym->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num2 << "[label=index]" << std::endl;
+	this->exp_index->__show(fout, next_num2);
 }
 
 ArrayAst::~ArrayAst() {
@@ -208,12 +229,15 @@ AssignAst::AssignAst(VarAst* lhs_, ExprAst* rhs_) :
 
 }
 
-void AssignAst::__show(std::fstream& fout) {
-	fout << "AssignAst:" << std::endl;
-	fout << "LhsVarAst:";
-	this->lhs->__show(fout);
-	fout << "RhsExprAst:";
-	this->rhs->__show(fout);
+void AssignAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+	fout << "_" << num << "[label=\":=\"]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=LhsVar]" << std::endl;
+	this->lhs->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num2 << "[label=RhsVar]" << std::endl;
+	this->rhs->__show(fout, next_num2);
 }
 
 AssignAst::~AssignAst() {
@@ -226,18 +250,21 @@ IfAst::IfAst(ExprAst* cond_, StmtAst* doIf_, StmtAst* doElse_) :
 	this->nodeType = AST_IF;
 }
 
-void IfAst::__show(std::fstream& fout) {
-	fout << "IfAst:" << std::endl;
-	fout << "condAst:";
-	this->cond->__show(fout);
-	fout << "doIfAst:";
-	this->ifStmt->__show(fout);
+void IfAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=If]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=cond]" << std::endl;
+	this->cond->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num2 << "[label=doIf]" << std::endl;
+	this->ifStmt->__show(fout, next_num2);
 	if (this->elseStmt) {
-		fout << "ElseAst:";
-		this->elseStmt->__show(fout);
-	} else {
-		fout << "No else"<<std::endl;
-	}
+		int next_num3 = node_count++;
+		fout << "_" << num << " -> _" << next_num3 << "[label=else]" << std::endl;
+		this->elseStmt->__show(fout, next_num3);
+	} 
 }
 
 void IfAst::addRight(StmtAst* doElse_) {
@@ -256,14 +283,27 @@ CaseAst::CaseAst(ExprAst* cond_, std::vector<CaseUnit*> caseStmt_):
 	}
 }
 
-void CaseAst::__show(std::fstream& fout) {
-	fout << "CASE AST:" << std::endl;
-	this->cond->__show(fout);
+void CaseAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	fout << "_" << num << "[label=CASE]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=cond]" << std::endl;
+	this->cond->__show(fout, next_num1);
 	for (int i=0;i<this->caseStmt.size();i++) {
 		if (this->caseStmt[i]) {
-			fout << "CASE:" <<  std::endl;
-			if (this->caseStmt[i]->val) this->caseStmt[i]->val->__show(fout);
-			if (this->caseStmt[i]->stmt) this->caseStmt[i]->stmt->__show(fout);
+			int next_num2 = node_count++;
+			fout << "_" << next_num2 << "[label=CASE" << i+1 << "]" << std::endl;
+			fout << "_" << num << " -> _" << next_num2 << std::endl;
+			if (this->caseStmt[i]->val){
+				int next_num3 = node_count++;
+				fout << "_" << next_num2 << " -> _" << next_num3 << "[label=val" << std::endl;
+				this->caseStmt[i]->val->__show(fout, next_num3);
+			} 
+			if (this->caseStmt[i]->stmt){
+				int next_num4 = node_count++;
+				fout << "_" << next_num2 << " -> _" << next_num4 << "[label=stmt" << std::endl;
+				this->caseStmt[i]->stmt->__show(fout, next_num4);
+			} 
 		}
 	}
 }
@@ -277,12 +317,16 @@ WhileAst::WhileAst(ExprAst* cond_, StmtAst* stmt_) :
 	this->nodeType = AST_WHILE;
 }
 
-void WhileAst::__show(std::fstream& fout) {
-	fout << "WHILE AST-cond:" << std::endl;
-	this->cond->__show(fout);
-	fout << "WHILE AST-stmt:" << std::endl;
-	this->stmt->__show(fout);
-	fout << "WHILE END" << std::endl;
+void WhileAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=while]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=cond]" << std::endl;
+	this->cond->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num1 << "[label=stmt]" << std::endl;
+	this->stmt->__show(fout, next_num2);
 }
 
 WhileAst::~WhileAst() {
@@ -298,14 +342,21 @@ RepeatAst::RepeatAst(std::vector<StmtAst*>& stmtList_, ExprAst* exp_) :
 	}
 }
 
-void RepeatAst::__show(std::fstream& fout) {
-	fout << "RepeatAST-exp:" << std::endl;
-	this->exp->__show(fout);
-	fout << "RepeatAST-stmtList:" << std::endl;
+void RepeatAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=Repeat]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=exp]" << std::endl;
+	this->exp->__show(fout, next_num1);
+	fout << "_" << next_num2 << "[label=stmtList]" << std::endl;
+	fout << "_" << num << " -> _" << next_num2 << std::endl;
 	for (auto it = this->stmtList.begin(); it != this->stmtList.end();it++) {
-		(*it)->__show(fout);
+		int next_num3 = node_count++;
+		fout << "_" << next_num2 << " -> _" << next_num3 << std::endl;
+		(*it)->__show(fout, next_num3);
 	}
-	fout << "Repeat END" << std::endl;
 }
 
 RepeatAst::~RepeatAst() {
@@ -317,17 +368,25 @@ ForAst::ForAst(SymbolAst* id_, ExprAst* init_, bool dir_, ExprAst* fin_, StmtAst
 	this->nodeType = AST_FOR;
 }
 
-void ForAst::__show(std::fstream& fout) {
-	fout << "For AST-loopvar:" << std::endl;
-	this->loop_var->__show(fout);
-	fout << "For AST_INIT:" << std::endl;
-	this->init->__show(fout);
-	fout << "For AST_END:" << std::endl;
-	this->end->__show(fout);
-	fout << "For-DIR:" << dir_init_to_end << std::endl;
-	fout << "For-stmt:" << std::endl;
-	this->stmt->__show(fout);
-	fout << "For END" << std::endl;
+void ForAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+	int next_num3 = node_count++;
+	int next_num4 = node_count++;
+	int next_num5 = node_count++;
+
+	fout << "_" << num << "[label=For]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=loopvar]" << std::endl;
+	this->loop_var->__show(fout, next_num1);
+	fout << "_" << num << " -> _" << next_num2 << "[label=init]" << std::endl;
+	this->init->__show(fout, next_num2);
+	fout << "_" << num << " -> _" << next_num3 << "[label=end]" << std::endl;
+	this->end->__show(fout, next_num3);
+	fout << "_" << next_num4 << "[label=" << dir_init_to_end << "]" << std::endl;
+	fout << "_" << num << " -> _" << next_num4 << "[label=dir]" << std::endl;
+	fout << "_" << num << " -> _" << next_num5 << "[label=stmt]" << std::endl;
+	this->stmt->__show(fout, next_num5);
 }
 
 ForAst::~ForAst() {
@@ -343,8 +402,9 @@ int GotoAst::getlabel() {
 	return this->label;
 }
 
-void GotoAst::__show(std::fstream& fout) {
-	fout << "GOTO-AST:" << this->label << std::endl;
+void GotoAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"GOTO " << this->label << "\"]" << std::endl;
 }
 
 GotoAst::~GotoAst() {
@@ -360,12 +420,14 @@ CompoundAst::CompoundAst(const std::vector<StmtAst*>& stmtList_)
 	}
 }
 
-void CompoundAst::__show(std::fstream& fout) {
-	fout << "Compound Ast:" << std::endl;
+void CompoundAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=Compound]" << std::endl;
 	for (auto it = this->stmtList.begin(); it != this->stmtList.end(); it++) {
-		(*it)->__show(fout);
+		int next_num = node_count++;
+		fout << "_" << num << " -> _" << next_num << std::endl;
+		(*it)->__show(fout, next_num);
 	}
-	fout << "Compound Ast END" << std::endl;
 }
 
 CompoundAst::~CompoundAst() {
@@ -386,11 +448,13 @@ FuncAst::FuncAst() :
 	;
 }
 
-void FuncAst::__show(std::fstream& fout) {
-	fout << "FUNC-AST:NAME:" << this->funcName << std::endl;
+void FuncAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"FUNC: " << this->funcName << "\"]" << std::endl;
 	for (auto it = this->argList.begin(); it != this->argList.end(); it++) {
-		fout << "ARG:" << std::endl;
-		(*it)->__show(fout);
+		int next_num = node_count++;
+		fout << "_" << num << " -> _" << next_num << "[label=arg]" << std::endl;
+		(*it)->__show(fout, next_num);
 	}
 }
 
@@ -404,10 +468,16 @@ DotAst::DotAst(VarAst* record_, std::string& field_) :
 	this->nodeType = AST_DOT;
 }
 
-void DotAst::__show(std::fstream& fout) {
-	fout << "DOT AST-FIELD:" << this->field << std::endl;
-	fout << "DOT AST-RECORD:";
-	this->record->__show(fout);
+void DotAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=Dot]" << std::endl;
+	fout << "_" << next_num1 << "[label=" << this->field << "]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=field]" << std::endl;
+	fout << "_" << num << " -> _" << next_num2 << "[label=record]" << std::endl;
+	this->record->__show(fout, next_num2);
 }
 
 DotAst::~DotAst() {
@@ -423,11 +493,13 @@ RecordDeclAst::RecordDeclAst(std::string t_name, std::vector<std::pair<TypeAst*,
 	}
 }
 
-void RecordDeclAst::__show(std::fstream& fout) {
-	fout << "Record Decl Ast-Name:" << name << std::endl;
+void RecordDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"Record Decl: " << name << "\"]" << std::endl;
 	for (auto it = this->members.begin(); it != this->members.end(); it++) {
-		fout << "Record Decl Ast-Member:";
-		(it->first)->__show(fout);
+		int next_num = node_count++;
+		fout << "_" << num << " -> _" << next_num << "[label=member]" << std::endl;
+		(it->first)->__show(fout, next_num);
 	}
 }
 
@@ -442,15 +514,23 @@ FuncDeclAst::FuncDeclAst(std::string& funcName_, CompoundAst* body_, const std::
 	}
 }
 
-void FuncDeclAst::__show(std::fstream& fout) {
-	fout << "Func Decl Ast-name:" << this->name << std::endl;
-	fout << "Para:" << std::endl;
+void FuncDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=\"Func Decl: " << this->name << "\"]" << std::endl;
 	for (int i = 0; i < args.size(); i++) {
-		if (this->is_var[i]) fout << "Var:"<<this->args[i].second;
-		else fout << "non-Var:"<<this->args[i].second;
-		this->args[i].first->__show(fout);
+		int next_num = node_count++;
+		if (this->is_var[i]){
+			fout << "_" << num << " -> _" << next_num << "[label=\"Para Var: "<<this->args[i].second << "\"]" << std::endl;
+		} 
+		else{
+			fout << "_" << num << " -> _" << next_num << "[label=\"Para non_Var:"<<this->args[i].second << "\"]" << std::endl;
+		} 
+		this->args[i].first->__show(fout, next_num);
 	}
-	this->body->__show(fout);
+	fout << "_" << num << " -> _" << next_num2 << "[label=body]" << std::endl;
+	this->body->__show(fout, next_num2);
 }
 
 FuncDeclAst::~FuncDeclAst() {
@@ -462,8 +542,9 @@ ConstDeclAst::ConstDeclAst(std::string& name_, SPL_TYPE type_, valueUnion const_
 	this->nodeType = AST_CONST_DECL;
 }
 
-void ConstDeclAst::__show(std::fstream& fout) {
-	fout << "Const Decl Ast-name:" << this->name << "\t type:" << this->type << std::endl;
+void ConstDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"Const " << this->type << ": " << this->name << "\"]" << std::endl;
 }
 
 ConstDeclAst::~ConstDeclAst() {
@@ -475,11 +556,13 @@ SimpleVarDeclAst::SimpleVarDeclAst(const std::string& name_, TypeAst* type_) :
 	this->nodeType = AST_SIMPLE_VAR_DECL;
 }
 
-void SimpleVarDeclAst::__show(std::fstream& fout) {
+void SimpleVarDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num = node_count++;
 
-	fout << "Simple var Decl Ast-name:" << this->name << std::endl;
-	fout << "Simple var Decl Ast-type:";
-	this->type->__show(fout);
+	fout << "_" << num << "[label=\"SimpleVarDecl: " << this->name << "\"]" << std::endl;
+	fout << "_" << num << " -> _" << next_num << "[label=type]" << std::endl;
+	this->type->__show(fout, next_num);
 }
 
 SimpleVarDeclAst::~SimpleVarDeclAst() { ; }
@@ -489,10 +572,13 @@ TypeDeclAst::TypeDeclAst(std::string& name_, TypeAst* type_):
 	this->nodeType = AST_TYPE_DECL;
 }
 
-void TypeDeclAst::__show(std::fstream& fout) {
-	fout << "Type Decl Ast-name:" << this->name << std::endl;
-	fout << "Type Decl Ast-type:";
-	this->type->__show(fout);
+void TypeDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num = node_count++;
+
+	fout << "_" << num << "[label=\"TypeDec:" << this->name << "\"]" << std::endl;
+	fout << "_" << num << " -> _" << next_num << "[label=type]" << std::endl;
+	this->type->__show(fout, next_num);
 }
 
 TypeDeclAst::~TypeDeclAst() { ; }
@@ -502,10 +588,16 @@ ArrayDeclAst::ArrayDeclAst(std::string& name_, ConstAst* minIndex_, ConstAst* ma
 	this->nodeType = AST_ARRAY_DECL;
 }
 
-void ArrayDeclAst::__show(std::fstream& fout) {
-	fout << "Array Decl Ast-name:" << this->name << "\t minIndex:"<< "\t maxIndex:" << std::endl;
-	fout << "Array Decl Ast-type:";
-	this->type->__show(fout);
+void ArrayDeclAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	int next_num1 = node_count++;
+	int next_num2 = node_count++;
+
+	fout << "_" << num << "[label=ArrayDec]" << std::endl;
+	fout << "_" << next_num1 << "[label=" << this->name << "]" << std::endl;
+	fout << "_" << num << " -> _" << next_num1 << "[label=name]" << std::endl;
+	fout << "_" << num << " -> _" << next_num2 << "[label=type]" << std::endl;
+	this->type->__show(fout, next_num2);
 }
 
 ArrayDeclAst::~ArrayDeclAst() {
@@ -522,11 +614,13 @@ SysFuncAst::SysFuncAst(SYS_FUNC_ID sysFuncId_, std::vector<ExprAst*>& argList_) 
 	}
 }
 
-void SysFuncAst::__show(std::fstream& fout) {
-	fout << "SYSFUNC ID:" << this->id << std::endl;
+void SysFuncAst::__show(std::fstream& fout, int node_num) {
+	int num = (node_num == -1 ? node_count++ : node_num);
+	fout << "_" << num << "[label=\"SYSFUNC: " << this->id << "\"]" << std::endl;
 	for (auto it = this->argList.begin(); it != this->argList.end(); it++) {
-		fout << "ARG:" << std::endl;
-		(*it)->__show(fout);
+		int next_num = node_count++;
+		fout << "_" << num << " -> _" << next_num << "[label=arg]" << std::endl;
+		(*it)->__show(fout, next_num);
 	}
 }
 

@@ -1,27 +1,42 @@
-## 1 lexer
+# SPL Compiler
 
-### 1.1 files
+A mini compiler for a pascal-like language.
 
-- token.h
-- lexer.l
-- lexertest.c 
-  - test the function of lexer
-  - the function to reveal token_type included
-- Makefile
-- test.spl
+## Dependency
 
+- bison
+- flex
+- llvm-6.0 
+- CMake 3.9 or higher version
+- clang to make executable file
+- Graphviz
 
+## Usage
 
-### 1.2 inctruction
+lib.sql and the generated binary should be placed under the same directory.
 
-```powershell
-make clean
-make lexer
-./lexer < test.spl
+File `ast.dot` is automatically generated, and you will need it to visualize AST.
+
+Usage: splc [-OPTIONS] inputfile
+Options:
+
+-o \<file\> Place the output into \<file\>
+
+-s Generate assembly.
+
+-ll Generate llvm-IR
+
+-c Generate Object file
+
+To generate executable file, run the following command:
+
+```
+clang -o <binary> <object>
 ```
 
+visualization command
 
+```
+dot -Tpng -o ast.png ast.dot
+```
 
-### 1.3 output
-
-![image-20200514223735303](readme.assets/image-20200514223735303.png)
