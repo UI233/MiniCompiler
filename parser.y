@@ -237,6 +237,7 @@ type_part: TOKEN_TYPE type_decl_list {
 
 type_decl_list: type_decl_list type_defination {
 	$$ = $<compoundast>1;
+	$<typedeclast>2 -> setLineNo(yylineno);
 	$$->addStmt($<typedeclast>2);
 }
 | type_defination {
@@ -249,16 +250,20 @@ type_decl_list: type_decl_list type_defination {
 
 type_defination: TOKEN_ID TOKEN_EQ type_decl TOKEN_SEMI {
 	$$ = new SPL::TypeDeclAst(*($<stringPtr>1), $<typeast>3);
+	$$ -> setLineNo(yylineno);
 }
 
 type_decl: simple_type_decl {
 	$$ = $<simpletypeast>1;
+	$$ -> setLineNo(yylineno);
 }
 | array_type_decl {
 	$$ = $<arraytypeast>1;
+	$$ -> setLineNo(yylineno);
 }
 | record_type_decl {
 	$$ = $<recordtypeast>1;
+	$$ -> setLineNo(yylineno);
 }
 
 
@@ -326,7 +331,6 @@ field_decl_list: field_decl_list field_decl {
 
 field_decl: name_list TOKEN_COLON type_decl TOKEN_SEMI {
 	$$ = new std::pair<SPL::TypeAst*, std::vector<std::string> > ($<typeast>3, *$<vecstrPtr>1);
-	$$-> setLineNo(yylineno);
 }
 
 name_list: name_list TOKEN_COMMA TOKEN_ID {
