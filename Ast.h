@@ -277,15 +277,19 @@ namespace SPL {
 		Ast::SPL_IR codeGen() const override;
 	};
 
-	class TypeAst: public Ast
+	class TypeAst
 	{
+	private:
+		int lineNo;
 	
 	public:
 		TypeAst();
+		void setLineNo(int lineNo_) {this->lineNo = lineNo_;};
+		int getLineNo() { return this->lineNo; };
 		virtual void __show(std::fstream& fout) = 0;
 		virtual ~TypeAst() = 0;
 		virtual llvm::Type* genType() const = 0;
-		//llvm::Type* codeGen() const override;
+		//llvm::Type* codeGen() const overwrite;
 	};
 
 	class SimpleTypeAst: public TypeAst {
