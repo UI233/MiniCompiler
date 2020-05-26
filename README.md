@@ -18,6 +18,7 @@ lib.sql and the generated binary should be placed under the same directory.
 File `ast.dot` is automatically generated, and you will need it to visualize AST.
 
 Usage: splc [-OPTIONS] inputfile
+
 Options:
 
 -o \<file\> Place the output into \<file\>

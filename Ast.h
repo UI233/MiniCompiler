@@ -14,7 +14,7 @@ namespace SPL {
 
 
 	class Ast {
-	private:
+	protected:
 		int lineNo;
 	public:
 		using SPL_IR = llvm::Value*;
@@ -279,7 +279,7 @@ namespace SPL {
 
 	class TypeAst
 	{
-	private:
+	protected:
 		int lineNo;
 	
 	public:

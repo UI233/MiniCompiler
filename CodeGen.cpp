@@ -32,10 +32,10 @@ namespace SPL
 constexpr int ERRORNO = -2184744;
 SymbolTable st;
 
-void logError(const std::string& err) 
+void logError(const std::string& err, int lineno) 
 {
     errorno = 1;
-    std::cerr << err << std::endl;
+    std::cerr << err << (lineno == -1 ? "" : "at line" + std::to_string(lineno)) << std::endl;
 }
 
 int getIntTyWidth(llvm::Type* ty) 
@@ -53,7 +53,7 @@ int SymbolAst::genIndex() const
     auto constant = st.getConstant(name);
     if (!constant.first)
     {
-        logError("Index is not constant");
+        logError("Index is not constant", lineNo);
         return ERRORNO;
     }
 
@@ -77,7 +77,7 @@ Ast::SPL_IR ConstAst::codeGen() const
         return llvm::ConstantFP::get(context, llvm::APFloat(value.valDouble));
         break;
     default:
-        logError("Non-constant type with constant");
+        logError("Non-constant type with constant", lineNo);
         return nullptr;
     }
 }
@@ -105,12 +105,12 @@ Ast::SPL_IR MathAst::codeGen() const
     }
     if ((!lchild && !rchild) || (!rchild && op != OP_NG && op != OP_NOT))
     {
-        logError("Invalid number of operand for operator");
+        logError("Invalid number of operand for operator", lineNo);
         return nullptr;
     }
     if (!isSupportedType(lhs_ty) || !isSupportedType(rhs_ty))
     {
-        logError("Invalid type of operand for operator");
+        logError("Invalid type of operand for operator", lineNo);
         return nullptr;
     }
     if (lhs_ty != rhs_ty && rhs_ty)
@@ -165,11 +165,11 @@ Ast::SPL_IR MathAst::codeGen() const
     case OP_NE:
         return is_fp ? builder.CreateFCmpONE(lhs, rhs, "funetmp") : builder.CreateICmpNE(lhs, rhs, "remtmp");
     case OP_OR:
-        return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
+        return is_fp ? logError("Unsupported and operator for floating point", lineNo), nullptr : builder.CreateOr(lhs, rhs, "ortmp");
     case OP_AND:
-        return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateAnd(lhs, rhs, "ortmp");
+        return is_fp ? logError("Unsupported and operator for floating point", lineNo), nullptr : builder.CreateAnd(lhs, rhs, "ortmp");
     case OP_NOT:
-        return is_fp ? logError("Unsupported and operator for floating point"), nullptr : builder.CreateNot(lhs, "nottmp");
+        return is_fp ? logError("Unsupported and operator for floating point", lineNo), nullptr : builder.CreateNot(lhs, "nottmp");
     case OP_NG:
         return is_fp ? builder.CreateFNeg(lhs, "fnegtmp") : builder.CreateNeg(lhs, "negtmp");
     default:
@@ -181,7 +181,7 @@ Ast::SPL_IR SymbolAst::genPtr() const
 {
     auto ptr =  st.getVarSymbol(name);
     if (!ptr)
-        logError("Undefined Variable");
+        logError("Undefined Variable", lineNo);
     return ptr;
 }
 
@@ -193,7 +193,7 @@ Ast::SPL_IR SymbolAst::codeGen() const
         auto ptr = genPtr();
         if (ptr == nullptr)
         {
-            logError("Not a variable");
+            logError("Not a variable", lineNo);
             return nullptr;
         }
         return builder.CreateLoad(ptr);
@@ -205,7 +205,7 @@ Ast::SPL_IR ArrayAst::genPtr() const
     llvm::Value* array = sym->genPtr();
     if (!array->getType()->getContainedType(0)->isArrayTy())
     {
-        logError("Variable is not array type");
+        logError("Variable is not array type", lineNo);
         return nullptr;
     }
     llvm::Value* index = exp_index->codeGen();
@@ -213,7 +213,7 @@ Ast::SPL_IR ArrayAst::genPtr() const
     llvm::Value* offset_index = builder.CreateSub(index, offset);
     if (!index->getType()->isIntegerTy())
     {
-        logError("Non-integer index");
+        logError("Non-integer index", lineNo);
         return nullptr;
     }
     auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
@@ -226,7 +226,7 @@ Ast::SPL_IR ArrayAst::codeGen() const
     auto ptr = genPtr();
     if (ptr == nullptr)
     {
-        logError("Not a variable");
+        logError("Not a variable", lineNo);
         return nullptr;
     }
 
@@ -239,7 +239,7 @@ Ast::SPL_IR DotAst::genPtr() const
     auto struct_mem = st.getRecordMap(record_ptr->getType()->getContainedType(0));
     if (!struct_mem.count(field))
     {
-        logError("Record doesn't have field " + field);
+        logError("Record doesn't have field " + field, lineNo);
         return nullptr;
     }
     auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
@@ -252,7 +252,7 @@ Ast::SPL_IR DotAst::codeGen() const
     auto ptr = genPtr();
     if (ptr == nullptr)
     {
-        logError("Not a variable");
+        logError("Not a variable", lineNo);
         return nullptr;
     }
 
@@ -261,10 +261,11 @@ Ast::SPL_IR DotAst::codeGen() const
 
 Ast::SPL_IR FuncAst::codeGen() const
 {
+    int lineNo = SPL::ExprAst::lineNo;
     auto func = st.getFuncSymbol(funcName);
     if (!func.first)
     {
-        logError("Undefined function");
+        logError("Undefined function", lineNo);
         return nullptr;
     }
     if (funcName == "writeln" || funcName == "write")
@@ -275,7 +276,7 @@ Ast::SPL_IR FuncAst::codeGen() const
         func.second = std::vector<bool>(argList.size(), true);
     if (argList.size() != func.second.size())
     {
-        logError("Wrong number of parameters passed");
+        logError("Wrong number of parameters passed", lineNo);
         return nullptr;
     }
     int idx = 0;
@@ -295,7 +296,7 @@ Ast::SPL_IR FuncAst::codeGen() const
             VarAst* arg_ptr = dynamic_cast<VarAst*>(arg.get());
             if (!arg_ptr)
             {
-                logError("Right value cannot be refered");
+                logError("Right value cannot be refered", lineNo);
                 return nullptr;
             }
             auto ptr = arg_ptr->genPtr();
@@ -313,7 +314,7 @@ Ast::SPL_IR FuncAst::codeGen() const
                 auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
                 if (!var_ptr)
                 {
-                    logError("Right value cannot be refered");
+                    logError("Right value cannot be refered", lineNo);
                     return nullptr;
                 }
                 argsv.push_back(var_ptr->genPtr());
@@ -324,7 +325,7 @@ Ast::SPL_IR FuncAst::codeGen() const
                 return nullptr;
             if (argsv.back()->getType() != arg.getType())
             {
-                logError("Parameter's type unmatched");
+                logError("Parameter's type unmatched", lineNo);
                 return nullptr;
             }
             ++idx;
@@ -340,7 +341,7 @@ Ast::SPL_IR AssignAst::codeGen() const
         return nullptr;
     if (!dynamic_cast<DotAst*>(lhs.get()) && !dynamic_cast<SymbolAst*>(lhs.get()) && !dynamic_cast<ArrayAst*>(lhs.get()))
     {
-        logError("Right value cannot be assigned");
+        logError("Right value cannot be assigned", lineNo);
         return nullptr;
     }
     auto var_ty = var_ptr->getType()->getContainedType(0);
@@ -353,7 +354,7 @@ Ast::SPL_IR AssignAst::codeGen() const
         value = builder.CreateSIToFP(value, var_ty);
     if (var_ptr->getType()->getContainedType(0) != value->getType())
     {
-        logError("Type unmatched");
+        logError("Type unmatched", lineNo);
         return nullptr;
     }
     return builder.CreateStore(value, var_ptr);
@@ -372,7 +373,7 @@ llvm::Type* SimpleTypeAst::genType() const
         return llvm::Type::getInt8Ty(context);
     if (name == "real")
         return llvm::Type::getDoubleTy(context);
-    logError("Undefined type");
+    logError("Undefined type", lineNo);
     return nullptr;
 }
 
@@ -383,7 +384,7 @@ Ast::SPL_IR SimpleVarDeclAst::codeGen() const
         return nullptr;
     if (st.hasName(name, true))
     {
-        logError("Redefinition of variable");
+        logError("Redefinition of variable", lineNo);
         return nullptr;
     }
 
@@ -404,7 +405,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     auto beforebb = builder.GetInsertBlock();
     if (st.hasName(name))
     {
-        logError("Name collision");
+        logError("Name collision", lineNo);
         return nullptr;
     }
     // generate the prototype of function
@@ -415,7 +416,7 @@ llvm::Value* FuncDeclAst::codeGen() const
         auto arg_ty = arg.first->genType();
         if (!arg_ty)
         {
-            logError("Undefined type");
+            logError("Undefined type", lineNo);
             return nullptr;
         }
         if (is_var[idx++])
@@ -425,7 +426,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->genType();
     if (!ret_ty)
     {
-        logError("Undefined type");
+        logError("Undefined type", lineNo);
         return nullptr;
     }
     auto func_ty = llvm::FunctionType::get(ret_ty, arg_tys, false);
@@ -445,18 +446,11 @@ llvm::Value* FuncDeclAst::codeGen() const
         // bool is_array = st.getType(args[idx].first->getName()).is_array;
         if (is_var[idx])
         {
-            // if (is_array) {
-            //     auto min_value = st.getType(args[idx].first->getName()).min_index;
-            //     auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
-            //     st.insertArray(arg.getName(), &arg, min_const);
-            // }
-            // else
             st.insertVar(arg.getName(), &arg);
         }
         else 
         {
             auto tmp_ptr = builder.CreateAlloca(arg.getType());
-            // builder.CreateStore(tmp_ptr, &arg);
             builder.CreateStore(&arg, tmp_ptr);
             st.insertVar(arg.getName(), tmp_ptr);
         }
@@ -498,7 +492,7 @@ llvm::StructType* RecordDeclAst::genType() const
 {
     if (st.hasName(name))
     {
-        logError("Collision of name");
+        logError("Collision of name", lineNo);
         return nullptr;
     }
     std::vector<llvm::Type*> member_ty;
@@ -507,7 +501,7 @@ llvm::StructType* RecordDeclAst::genType() const
         member_ty.push_back(member.first->genType());
         if (!member_ty.back())
         {
-            logError("Undefined type");
+            logError("Undefined type", lineNo);
             return nullptr;
         }
     }
@@ -518,7 +512,7 @@ Ast::SPL_IR ConstDeclAst::codeGen() const
 {
     if (st.hasName(name))
     {
-        logError("Redefinition of variable");
+        logError("Redefinition of variable", lineNo);
         return nullptr;
     }
 
@@ -539,7 +533,7 @@ Ast::SPL_IR ConstDeclAst::codeGen() const
     default:
         std::cerr << INT << std::endl;
         std::cerr << type << std::endl;
-        logError("This type cannot be constant");
+        logError("This type cannot be constant", lineNo);
         return nullptr;
     }
 }
@@ -548,7 +542,7 @@ Ast::SPL_IR ArrayDeclAst::codeGen() const
 {
     if (st.hasName(name))
     {
-        logError("Redefinition of variable");
+        logError("Redefinition of variable", lineNo);
         return nullptr;
     }
     
@@ -559,7 +553,7 @@ Ast::SPL_IR ArrayDeclAst::codeGen() const
         return nullptr;
     if (length <= 0)
     {
-        logError("Length of array cannot be negative");
+        logError("Length of array cannot be negative", lineNo);
         return nullptr;
     }
     auto ele_ty = type->genType();
@@ -570,7 +564,7 @@ Ast::SPL_IR ArrayDeclAst::codeGen() const
     auto min_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), min_value);
     st.insertVar(name, arr_ptr);
     if (!st.insertArray(arr_ty, min_const))
-        logError(name + " has already been defined");
+        logError(name + " has already been defined", lineNo);
     return nullptr;
 }
 
@@ -586,7 +580,7 @@ Ast::SPL_IR LabelAst::codeGen() const
 {
     if (st.hasName(std::to_string(label)))
     {
-        logError("Collision of name");
+        logError("Collision of name", lineNo);
         return nullptr;
     }
     auto thefunc = builder.GetInsertBlock()->getParent();
@@ -609,7 +603,7 @@ Ast::SPL_IR IfAst::codeGen() const
         return nullptr;
     if (!condv->getType()->isIntegerTy(1))
     {
-        logError("Condition expression should be boolean");
+        logError("Condition expression should be boolean", lineNo);
         return nullptr;
     }
     auto thefunc = builder.GetInsertBlock()->getParent();
@@ -641,7 +635,7 @@ Ast::SPL_IR CaseAst::codeGen() const
         return nullptr;
     if (!condv->getType()->isIntegerTy())
     {
-        logError("Case expression should be integer type");
+        logError("Case expression should be integer type", lineNo);
         return nullptr;
     }
     std::vector<llvm::BasicBlock*> entries;
@@ -680,7 +674,7 @@ Ast::SPL_IR ForAst::codeGen() const
     auto loopv = init->codeGen();
     if (!loopv->getType()->isIntegerTy() || !loopv_ptr->getType()->getContainedType(0)->isIntegerTy())
     {
-        logError("Loop variable should be integer");
+        logError("Loop variable should be integer", lineNo);
         return nullptr;
     }
     auto loop_var = builder.CreateStore(loopv, loopv_ptr);
@@ -724,7 +718,7 @@ Ast::SPL_IR WhileAst::codeGen() const
     auto condv = cond->codeGen();
     if (!condv->getType()->isIntegerTy(1))
     {
-        logError("Conditional expression should be boolean");
+        logError("Conditional expression should be boolean", lineNo);
         return nullptr;
     }
     builder.CreateCondBr(condv, bodybb, afterbb);
@@ -753,7 +747,7 @@ Ast::SPL_IR RepeatAst::codeGen() const
     auto condv = exp->codeGen();
     if (!condv->getType()->isIntegerTy(1))
     {
-        logError("Conditional expression should be boolean");
+        logError("Conditional expression should be boolean", lineNo);
         return nullptr;
     }
     builder.CreateCondBr(condv, afterbb, bodybb);
@@ -767,13 +761,13 @@ Ast::SPL_IR GotoAst::codeGen() const
     
     if (!st.hasName(std::to_string(label), false))
     {
-        logError("Undefined label");
+        logError("Undefined label", lineNo);
         return nullptr;
     }
     auto gotobb = st.getLabelSymbol(std::to_string(label));
     if (gotobb->getParent() != builder.GetInsertBlock()->getParent())
     {
-        logError("Cannot goto another label in other function");
+        logError("Cannot goto another label in other function", lineNo);
         return nullptr;
     }
     builder.CreateBr(gotobb);
@@ -784,7 +778,7 @@ llvm::Value* TypeDeclAst::codeGen() const
 {
     if (st.hasName(name))
     {
-        logError("Type has been defined");
+        logError("Type has been defined", lineNo);
         return nullptr;
     }
     // if (simple_t.get())
@@ -816,7 +810,7 @@ llvm::Type* ArrayTypeAst::genType() const
         return nullptr;
     if (length <= 0)
     {
-        logError("Length of array cannot be negative");
+        logError("Length of array cannot be negative", lineNo);
         return nullptr;
     }
     auto ele_ty = memberType->genType();
@@ -838,7 +832,7 @@ llvm::Type* RecordTypeAst::genType() const
         member_name.push_back(member.second);
         if (!member_ty.back())
         {
-            logError("Undefined type");
+            logError("Undefined type", lineNo);
             return nullptr;
         }
     }

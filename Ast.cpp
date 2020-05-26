@@ -22,7 +22,7 @@ LabelAst::~LabelAst() {
 	;
 }
 
-Ast::Ast() {
+Ast::Ast(): lineNo(-1) {
 	;
 }
 
