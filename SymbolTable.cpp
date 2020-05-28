@@ -141,10 +141,17 @@ SymbolTable::NamedType SymbolTable::getType(const std::string& name) const
     return nullptr;
 }
 
-bool SymbolTable::insertVar(const std::string& name, llvm::Value* ptr)
+bool SymbolTable::insertVar(const std::string& name, llvm::Value* ptr, bool shadowable)
 {
-    if (hasName(name))
+    if (hasName(name) && !tables.back().shadowable_name.count(name))
         return false;
+    if (tables.back().named_variable.count(name))
+    {
+        tables.back().named_variable.erase(name);
+        tables.back().shadowed_name.insert(name);
+    }
+    if (shadowable)
+        tables.back().shadowable_name.insert(name);
     tables.back().named_variable.insert(std::make_pair(name, ptr));
     return true;
 }
@@ -166,11 +173,11 @@ bool SymbolTable::insertRecord(llvm::StructType* ty, const std::vector<std::stri
     return true;
 }
 
-bool SymbolTable::insertFunction(const std::string& name, llvm::Function* func, const std::vector<bool>& is_var)
+bool SymbolTable::insertFunction(const std::string& name, llvm::Function* func, const std::vector<bool>& is_var, int scope_num)
 {
     if (hasName(name))
         return false;
-    tables.back().named_function.insert(std::make_pair(name, std::make_pair(func, is_var)));
+    tables.back().named_function.insert(std::make_pair(name, std::make_tuple(func, is_var, scope_num)));
     return true;
 }
 
@@ -182,10 +189,17 @@ bool SymbolTable::insertLabel(const std::string& name, llvm::BasicBlock* block)
     return true;
 }
 
-bool SymbolTable::insertConstant(const std::string& name, llvm::Constant* value, valueUnion value_v)
+bool SymbolTable::insertConstant(const std::string& name, llvm::Value* value, valueUnion value_v, bool shadowable)
 {
-    if (hasName(name, false))
+    if (hasName(name, false) && !tables.back().shadowable_name.count(name))
         return false;
+    if (tables.back().named_constant.count(name))
+    {
+        tables.back().named_constant.erase(name);
+        tables.back().shadowed_name.insert(name);
+    }
+    if (shadowable)
+        tables.back().shadowable_name.insert(name);
     tables.back().named_constant.insert(std::make_pair(name, NamedConstant(value, value_v)));
     return true;
 }
@@ -207,6 +221,13 @@ bool SymbolTable::insertType(const std::string& name, llvm::Type* type)
     return true;
 }
 
+bool SymbolTable::hasShadowedVar(const std::string& name, int scope) const
+{
+    if (scope >= tables.size())
+        return false;
+    return tables[scope].shadowed_name.count(name);
+}
+
 bool SymbolTable::hasName(const std::string& name, bool current_scope) const
 {
     return getSymbolType(name, current_scope) != 0;
@@ -221,4 +242,38 @@ void SymbolTable::pushScope()
 {
     SymbolTable::Table a;
     tables.push_back(a);
+}
+
+FuncVar SymbolTable::genParamType(int scope) const
+{
+    if (scope == -1)
+        scope = tables.size() - 1;
+    std::vector<llvm::Type*> elements_ty;
+    std::vector<std::string> param_names;
+    for (auto& v: tables[scope].named_variable)
+    {
+        elements_ty.push_back(v.second->getType());
+        param_names.push_back(v.first);
+    }
+    std::vector<std::string> constant_name;
+    std::vector<valueUnion> constant_value;
+    for (auto& v: tables[scope].named_constant)
+    {
+        constant_name.push_back(v.first);
+        constant_value.push_back(v.second.second);
+        elements_ty.push_back(v.second.first->getType());
+    }
+    llvm::Type* struct_ty = elements_ty.size() == 0 ? nullptr : llvm::StructType::create(elements_ty);
+    return FuncVar(struct_ty, param_names, constant_name, constant_value);
+}
+
+
+std::vector<llvm::Value*> SymbolTable::genParam(int scope) const
+{
+    std::vector<llvm::Value*> params;
+    for (auto& v: tables[scope].named_variable)
+        params.push_back(v.second);
+    for (auto& v: tables[scope].named_constant)
+        params.push_back(v.second.first);
+    return params;
 }

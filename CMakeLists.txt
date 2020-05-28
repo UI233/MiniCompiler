@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(splc)
 add_definitions(-std=c++11)
+add_definitions(-g)
 
 execute_process(COMMAND llvm-config --libdir OUTPUT_VARIABLE LLVM_LINK_DIR)
 string(REGEX REPLACE "\n$" "" LLVM_LINK_DIR "${LLVM_LINK_DIR}")

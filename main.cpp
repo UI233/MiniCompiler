@@ -17,8 +17,16 @@ int main(int argc, char **argv) {
 	std::string output_file;
     std::string sourcePath;
 	std::string sourceFile;
+	std::string now_dir(argv[0]);
+	now_dir = now_dir.substr(0, now_dir.find_last_of('/'));
+	std::string lib_func = now_dir + "/lib.spl";
 	// read lib function
-	yyin = fopen("lib.spl", "r");
+	yyin = fopen(lib_func.c_str(), "r");
+	if (!yyin)
+	{
+		std::cerr << "fatal error: cannot find lib functions at " << lib_func << std::endl;
+		return 1;
+	}
     yyparse();
 	fclose(yyin);
 	yylineno = 1;
@@ -42,6 +50,8 @@ int main(int argc, char **argv) {
 			output_flag = IR;
 		else if (argv[i] == std::string("-c"))
 			output_flag = OBJ;
+		else if (argv[i] == std::string("-mips"))
+			output_flag = MIPS;
 		else
 			sourceFile = sourcePath + argv[i];
 	}
@@ -59,14 +69,21 @@ int main(int argc, char **argv) {
 		case IR:
 			output_file = sourceFile + ".ll";
 			break;
+		case MIPS:
 		case ASSEMBLY:
 			output_file = sourceFile + ".s";
 			break;
+
 		default:
 			break;
 		}
 	}
 	yyin = fopen(sourceFile.c_str(), "r");
+	if (!yyin)
+	{
+		std::cerr << "fatal error: cannot open input file" << std::endl;
+		return 1;
+	}
     yyparse();
 	fclose(yyin);
     SPL::Ast* root = program;

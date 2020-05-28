@@ -263,18 +263,18 @@ Ast::SPL_IR FuncAst::codeGen() const
 {
     int lineNo = SPL::ExprAst::lineNo;
     auto func = st.getFuncSymbol(funcName);
-    if (!func.first)
+    if (!std::get<0>(func))
     {
         logError("Undefined function", lineNo);
         return nullptr;
     }
     if (funcName == "writeln" || funcName == "write")
     {
-        func.second = std::vector<bool>(argList.size(), false);
+        std::get<1>(func) = std::vector<bool>(argList.size(), false);
     }
     if (funcName == "read")
-        func.second = std::vector<bool>(argList.size(), true);
-    if (argList.size() != func.second.size())
+        std::get<1>(func) = std::vector<bool>(argList.size(), true);
+    if (argList.size() != std::get<1>(func).size())
     {
         logError("Wrong number of parameters passed", lineNo);
         return nullptr;
@@ -306,31 +306,64 @@ Ast::SPL_IR FuncAst::codeGen() const
         argsv = getReadArgument(context, argsv, arg_raw_type, module);
     }
     else
-        for (auto& arg: func.first->args())
+        for (auto& arg: std::get<0>(func)->args())
         {
-            bool is_var = func.second[idx];
-            if (is_var)
+            if (idx == std::get<1>(func).size())
             {
-                auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
-                if (!var_ptr)
+                auto additional_info = st.genParamType(std::get<2>(func));
+                auto str = builder.CreateAlloca(additional_info.struct_ty);
+                auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                int idx = 0;
+                for (auto& var_name: additional_info.var_name)
                 {
-                    logError("Right value cannot be refered", lineNo);
+                    auto index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), idx);
+                    auto var_ptr = builder.CreateInBoundsGEP(str, {zero, index});
+                    if (!st.hasShadowedVar(var_name, std::get<2>(func) + 1))
+                    {
+                        auto var = st.getVarSymbol(var_name);
+                        builder.CreateStore(var, var_ptr);
+                    }
+                    ++idx;
+                }
+
+                for (auto& var_name: additional_info.constant_name)
+                {
+                    auto index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), idx);
+                    auto var_ptr = builder.CreateInBoundsGEP(str, {zero, index});
+                    if (!st.hasShadowedVar(var_name, std::get<2>(func) + 1))
+                    {
+                        auto var = st.getConstant(var_name).first;
+                        builder.CreateStore(var, var_ptr);
+                    }
+                    ++idx;
+                }
+                argsv.push_back(str);
+            }
+            else {
+                bool is_var = std::get<1>(func)[idx];
+                if (is_var)
+                {
+                    auto var_ptr = dynamic_cast<VarAst*>(argList[idx].get());
+                    if (!var_ptr)
+                    {
+                        logError("Right value cannot be refered", lineNo);
+                        return nullptr;
+                    }
+                    argsv.push_back(var_ptr->genPtr());
+                }
+                else
+                    argsv.push_back(argList[idx]->codeGen());
+                if (!argsv.back())
+                    return nullptr;
+                if (argsv.back()->getType() != arg.getType())
+                {
+                    logError("Parameter's type unmatched", lineNo);
                     return nullptr;
                 }
-                argsv.push_back(var_ptr->genPtr());
-            }
-            else
-                argsv.push_back(argList[idx]->codeGen());
-            if (!argsv.back())
-                return nullptr;
-            if (argsv.back()->getType() != arg.getType())
-            {
-                logError("Parameter's type unmatched", lineNo);
-                return nullptr;
             }
             ++idx;
         }
-    return builder.CreateCall(func.first, argsv);
+    return builder.CreateCall(std::get<0>(func), argsv);
 }
 
 Ast::SPL_IR AssignAst::codeGen() const
@@ -410,6 +443,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     }
     // generate the prototype of function
     std::vector<llvm::Type*> arg_tys;
+    auto additional_info = st.genParamType();
     int idx = 0;
     for (auto& arg: args)
     {
@@ -423,6 +457,8 @@ llvm::Value* FuncDeclAst::codeGen() const
             arg_ty = arg_ty->getPointerTo();
         arg_tys.push_back(arg_ty);
     }
+    if (additional_info.struct_ty)
+        arg_tys.push_back(additional_info.struct_ty->getPointerTo());
     auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->genType();
     if (!ret_ty)
     {
@@ -433,26 +469,53 @@ llvm::Value* FuncDeclAst::codeGen() const
     auto func = llvm::Function::Create(func_ty, llvm::Function::ExternalLinkage, name, &module);
     idx = 0;
     for (auto& arg: func->args())
-        arg.setName(args[idx++].second);
+        if (idx == is_var.size())
+            arg.setName("0father_var");
+        else
+            arg.setName(args[idx++].second);
     // parameter pass of function    
-    st.insertFunction(name, func, is_var);
+    auto scope_num = st.getScopeNum();
+    st.insertFunction(name, func, is_var, scope_num);
     st.pushScope();
-    st.insertFunction(name, func, is_var);
+    st.insertFunction(name, func, is_var, scope_num);
     auto entrybb = llvm::BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(entrybb);
     idx = 0;
     for (auto& arg: func->args())
     {
         // bool is_array = st.getType(args[idx].first->getName()).is_array;
-        if (is_var[idx])
+        if (arg.getName() == "0father_var")
         {
-            st.insertVar(arg.getName(), &arg);
+            auto zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+            int idx = 0;
+            for (auto& var_name: additional_info.var_name) 
+            {
+                auto index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), idx);
+                auto var_ptr = builder.CreateInBoundsGEP(&arg, {zero, index});
+                auto var = builder.CreateLoad(var_ptr);
+                st.insertVar(var_name, var, true);
+                ++idx;
+            }
+
+            for (int i = 0; i < additional_info.constant_name.size(); ++i, ++idx)
+            {
+                auto index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), idx);
+                auto var_ptr = builder.CreateInBoundsGEP(&arg, {zero, index});
+                auto var = builder.CreateLoad(var_ptr);
+                st.insertConstant(additional_info.constant_name[i], var, additional_info.constant_value[i], true);
+            }
         }
-        else 
-        {
-            auto tmp_ptr = builder.CreateAlloca(arg.getType());
-            builder.CreateStore(&arg, tmp_ptr);
-            st.insertVar(arg.getName(), tmp_ptr);
+        else {
+            if (is_var[idx])
+            {
+                st.insertVar(arg.getName(), &arg);
+            }
+            else 
+            {
+                auto tmp_ptr = builder.CreateAlloca(arg.getType());
+                builder.CreateStore(&arg, tmp_ptr);
+                st.insertVar(arg.getName(), tmp_ptr);
+            }
         }
         ++idx;
     }
@@ -853,9 +916,9 @@ void initEnv()
     auto read_func = createReadPrototype(context, &module);
     auto write_func = createWritePrototype(context, &module);
     // add sys_func to symbol table
-    st.insertFunction("read", read_func, std::vector<bool>());
-    st.insertFunction("write", write_func, std::vector<bool>());
-    st.insertFunction("writeln", write_func, std::vector<bool>());
+    st.insertFunction("read", read_func, std::vector<bool>(), -2);
+    st.insertFunction("write", write_func, std::vector<bool>(), -2);
+    st.insertFunction("writeln", write_func, std::vector<bool>(), -2);
     // add built-in type
     st.insertType("boolean", llvm::Type::getInt1Ty(context));
     st.insertType("integer", llvm::Type::getInt32Ty(context));
@@ -888,8 +951,7 @@ void genIR(Ast* lib_func, SPL::Ast* root, std::string output_file, SPL_OUTPUT_TY
             llvm::InitializeAllTargetMCs();
             llvm::InitializeAllAsmParsers();
             llvm::InitializeAllAsmPrinters();
-
-            auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+            auto TargetTriple = output_flag == MIPS ? "mips-apple-darwin17.6.0" : llvm::sys::getDefaultTargetTriple();
             module.setTargetTriple(TargetTriple);
 
             std::string Error;
@@ -903,7 +965,7 @@ void genIR(Ast* lib_func, SPL::Ast* root, std::string output_file, SPL_OUTPUT_TY
                 return ;
             }
 
-            auto CPU = "generic";
+            auto CPU = output_flag == MIPS ? "mips32" : "generic";
             auto Features = "";
 
             llvm::TargetOptions opt;

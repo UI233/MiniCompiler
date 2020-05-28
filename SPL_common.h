@@ -4,6 +4,7 @@
 enum SPL_OUTPUT_TYPE {
 	OBJ,
 	ASSEMBLY,
+	MIPS,
 	IR
 };
 
