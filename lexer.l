@@ -40,7 +40,7 @@ comment	(\/\/.*\n)
 "-"             { flag = 1; return TOKEN(TOKEN_SUB); }
 "*"             { flag = 1; return TOKEN(TOKEN_MUL); }
 "/"             { flag = 1; return TOKEN(TOKEN_DIV); }
-"MOD"|"mod"   { flag = 1; return TOKEN(TOKEN_MOD); }
+"MOD"|"mod"|"%"   { flag = 1; return TOKEN(TOKEN_MOD); }
 
 "<>"	        { flag = 1; return TOKEN(TOKEN_NE); }
 "<="            { flag = 1; return TOKEN(TOKEN_LE); }
