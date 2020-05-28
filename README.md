@@ -23,11 +23,13 @@ Options:
 
 -o \<file\> Place the output into \<file\>
 
--s Generate assembly.
+-s Generate assembly for host machine.
 
 -ll Generate llvm-IR
 
 -c Generate Object file
+
+-mips Generate MIPS assembly for apple-darwin.
 
 To generate executable file, run the following command:
 
