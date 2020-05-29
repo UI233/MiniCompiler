@@ -1,4 +1,5 @@
 #include "CodeGen.h"
+#include "llvm/Pass.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
@@ -19,12 +20,16 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
 #include "SymbolTable.h"
 #include "SystemFunc.h"
 
 llvm::LLVMContext context;
 llvm::IRBuilder<> builder(context);
 llvm::Module module("MainModule", context);
+llvm::legacy::FunctionPassManager fpm(&module);
 int errorno = 0;
 
 namespace SPL 
@@ -443,7 +448,6 @@ llvm::Value* FuncDeclAst::codeGen() const
     }
     // generate the prototype of function
     std::vector<llvm::Type*> arg_tys;
-    auto additional_info = st.genParamType();
     int idx = 0;
     for (auto& arg: args)
     {
@@ -457,6 +461,7 @@ llvm::Value* FuncDeclAst::codeGen() const
             arg_ty = arg_ty->getPointerTo();
         arg_tys.push_back(arg_ty);
     }
+    auto additional_info = st.genParamType();
     if (additional_info.struct_ty)
         arg_tys.push_back(additional_info.struct_ty->getPointerTo());
     auto ret_ty = ret_type ==nullptr ? llvm::Type::getVoidTy(context) :ret_type->genType();
@@ -535,6 +540,7 @@ llvm::Value* FuncDeclAst::codeGen() const
     else
         builder.CreateRetVoid();
     llvm::verifyFunction(*func);
+    fpm.run(*func);
     // remove local variable from symbol table
     st.popScope();
     builder.SetInsertPoint(beforebb);
@@ -924,6 +930,16 @@ void initEnv()
     st.insertType("integer", llvm::Type::getInt32Ty(context));
     st.insertType("char", llvm::Type::getInt8Ty(context));
     st.insertType("real", llvm::Type::getDoubleTy(context));
+    // initialize function pass manager
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    fpm.add(llvm::createInstructionCombiningPass());
+    // Reassociate expressions.
+    fpm.add(llvm::createReassociatePass());
+    // Eliminate Common SubExpressions.
+    fpm.add(llvm::createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    fpm.add(llvm::createCFGSimplificationPass());
+    fpm.doInitialization();
 }
 
 void genIR(Ast* lib_func, SPL::Ast* root, std::string output_file, SPL_OUTPUT_TYPE output_flag)
